@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# turbo
+.turbo/
+
+# env / local config
+.env
+.env.*
+config/local.yaml
+config/local.*.yaml
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.idea/
+.vscode/*
+!.vscode/extensions.json

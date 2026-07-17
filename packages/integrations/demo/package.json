@@ -1,0 +1,23 @@
+{
+  "name": "@home-dashboard/integration-demo",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Fake-data integration: develop and demo the dashboard without a real smart home.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@home-dashboard/shared": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,63 @@
+/*
+ * Design tokens for the wall dashboard (dark-first — it lives on a wall).
+ * Ink/surface/status values follow the validated reference palette; series
+ * colors are the categorical slots in fixed order.
+ */
+:root {
+  color-scheme: dark;
+
+  --page-plane: #0d0d0d;
+  --surface-1: #1a1a19;
+
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+
+  --hairline: rgba(255, 255, 255, 0.1);
+
+  /* categorical slots (dark-surface steps, fixed order) */
+  --series-1: #3987e5; /* blue   */
+  --series-2: #008300; /* green  */
+  --series-3: #d55181; /* magenta */
+  --series-4: #c98500; /* yellow */
+
+  /* status — reserved, always paired with icon + label */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --radius-card: 16px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@keyframes hd-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--page-plane);
+  color: var(--text-primary);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  overflow: hidden; /* the wall panel never scrolls; screens paginate */
+  user-select: none;
+}

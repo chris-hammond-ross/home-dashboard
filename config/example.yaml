@@ -1,0 +1,56 @@
+# Home Dashboard — example configuration.
+# Copy to config/local.yaml (gitignored) and edit; the server prefers local.yaml.
+# Out of the box this runs entirely on the demo integration (fake data).
+
+server:
+  host: 0.0.0.0
+  port: 8090
+
+ambient:
+  idleSeconds: 120 # dashboard → ambient screen after this much inactivity
+  resumeWindowMinutes: 60 # on wake, restore the last view if touched within this window
+  weatherTopic: demo/weather
+  calendarTopic: demo/calendar
+
+integrations:
+  - id: demo
+    kind: demo
+    # config: { tickMs: 2000 }
+
+screens:
+  - id: home
+    name: Home
+    default: true
+    columns: 4
+    widgets:
+      - type: clock
+        cols: 2
+      - type: weather
+        cols: 2
+      - type: energy
+        cols: 2
+        rows: 2
+        title: Energy
+      - type: lights
+        cols: 2
+        rows: 2
+        title: Lights
+      - type: calendar
+        cols: 2
+        rows: 2
+        title: Up next
+      - type: now-playing
+        cols: 2
+        title: Now playing
+
+  - id: media
+    name: Media
+    columns: 4
+    widgets:
+      - type: now-playing
+        cols: 4
+        title: Now playing
+      - type: calendar
+        cols: 4
+        rows: 2
+        title: Coming up
