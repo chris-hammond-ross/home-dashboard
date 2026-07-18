@@ -48,6 +48,14 @@ Copy [config/example.yaml](config/example.yaml) to `config/local.yaml` and edit 
 screens, widgets, integrations, ambient behavior. The server validates config at
 startup and tells you exactly what's wrong.
 
+To connect a real **Home Assistant** (long-lived token, live two-way entity toggles,
+`pnpm ha:explore` to list everything HA exposes), follow
+[docs/home-assistant.md](docs/home-assistant.md).
+
+Or skip straight to a populated dashboard: **`pnpm onboard`** reads your HA, groups
+your lights/switches/fans by room (HA areas), and generates a screen per room in
+`config/local.yaml` — backing up first, never touching screens you've customized.
+
 ## Repository layout
 
 | Path                      | What                                                              |

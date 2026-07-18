@@ -26,6 +26,8 @@ export const ScreenSchema = z.object({
   /** Grid columns for this screen (portrait 43" works well with 4). */
   columns: z.number().int().min(1).max(12).default(4),
   default: z.boolean().default(false),
+  /** True on screens owned by `pnpm onboard` — re-running onboarding replaces them. */
+  generated: z.boolean().default(false),
   widgets: z.array(WidgetSchema).default([]),
 });
 export type ScreenConfig = z.infer<typeof ScreenSchema>;

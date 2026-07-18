@@ -33,8 +33,47 @@ export function findConfigPath(): string {
   );
 }
 
+/** Load .env (cwd, then repo root) so config can reference secrets as ${VAR}. */
+function loadDotEnv(): void {
+  for (const candidate of [".env", "../../.env"]) {
+    try {
+      process.loadEnvFile(resolve(process.cwd(), candidate));
+    } catch {
+      /* missing .env is fine */
+    }
+  }
+}
+
+/** Expand ${VAR} in every string value; collect missing vars for one clear error. */
+function expandEnv(value: unknown, missing: Set<string>): unknown {
+  if (typeof value === "string") {
+    return value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_match, name: string) => {
+      const env = process.env[name];
+      if (env === undefined) {
+        missing.add(name);
+        return "";
+      }
+      return env;
+    });
+  }
+  if (Array.isArray(value)) return value.map((v) => expandEnv(v, missing));
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, expandEnv(v, missing)]));
+  }
+  return value;
+}
+
 export function loadConfig(path: string): DashboardConfig {
-  const raw: unknown = parse(readFileSync(path, "utf8"));
+  loadDotEnv();
+  const parsed: unknown = parse(readFileSync(path, "utf8"));
+  const missing = new Set<string>();
+  const raw = expandEnv(parsed, missing);
+  if (missing.size) {
+    throw new Error(
+      `Config ${path} references undefined environment variable(s): ${[...missing].join(", ")}. ` +
+        `Set them in the environment or a .env file in the repo root.`,
+    );
+  }
   const result = DashboardConfigSchema.safeParse(raw);
   if (!result.success) {
     throw new Error(`Invalid config at ${path}:\n${z.prettifyError(result.error)}`);

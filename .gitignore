@@ -11,8 +11,8 @@ dist/
 # env / local config
 .env
 .env.*
-config/local.yaml
-config/local.*.yaml
+!.env.example
+config/local.*
 
 # logs
 *.log
@@ -25,3 +25,5 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+temp/*

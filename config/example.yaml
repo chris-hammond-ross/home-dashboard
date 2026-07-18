@@ -17,6 +17,15 @@ integrations:
     kind: demo
     # config: { tickMs: 2000 }
 
+  # Real Home Assistant — full walkthrough in docs/home-assistant.md
+  # - id: ha
+  #   kind: home-assistant
+  #   config:
+  #     url: http://homeassistant.local:8123 # the default; use the IP in Docker
+  #     token: ${HA_TOKEN} # put HA_TOKEN=... in .env (repo root, gitignored)
+  #     entities: # omit to publish ALL entities
+  #       - light.study_lamp
+
 screens:
   - id: home
     name: Home
@@ -42,6 +51,12 @@ screens:
       - type: now-playing
         cols: 2
         title: Now playing
+      # A real HA light with live two-way state (needs the ha integration above):
+      # - type: entity-toggle
+      #   title: Study
+      #   cols: 2
+      #   props:
+      #     entity: light.study_lamp
 
   - id: media
     name: Media

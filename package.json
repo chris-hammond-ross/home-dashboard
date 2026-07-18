@@ -13,7 +13,9 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "ha:explore": "node packages/integrations/home-assistant/scripts/explore.mjs",
+    "onboard": "node packages/integrations/home-assistant/scripts/onboard.mjs"
   },
   "devDependencies": {
     "prettier": "^3.3.0",

@@ -7,6 +7,7 @@ import { EnergyWidget } from "./EnergyWidget.js";
 import { LightsWidget } from "./LightsWidget.js";
 import { CalendarWidget } from "./CalendarWidget.js";
 import { NowPlayingWidget } from "./NowPlayingWidget.js";
+import { EntityToggleWidget } from "./EntityToggleWidget.js";
 
 export interface WidgetRenderProps {
   config: WidgetConfig;
@@ -21,6 +22,7 @@ const registry: Record<string, WidgetComponent> = {
   lights: LightsWidget,
   calendar: CalendarWidget,
   "now-playing": NowPlayingWidget,
+  "entity-toggle": EntityToggleWidget,
 };
 
 /** Shared card chrome: fills its grid cell, optional mini-label title. */
