@@ -13,6 +13,10 @@ dist/
 .env.*
 !.env.example
 config/local.*
+.claude/settings.local.json
+
+# runtime data (SQLite screens db — delete to re-seed from YAML)
+/data/
 
 # logs
 *.log

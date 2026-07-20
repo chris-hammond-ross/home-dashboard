@@ -6,6 +6,9 @@ server:
   host: 0.0.0.0
   port: 8090
 
+# storage:
+#   path: ../data/dashboard.db # SQLite file; relative to this config file
+
 ambient:
   idleSeconds: 120 # dashboard → ambient screen after this much inactivity
   resumeWindowMinutes: 60 # on wake, restore the last view if touched within this window
@@ -26,6 +29,10 @@ integrations:
   #     entities: # omit to publish ALL entities
   #       - light.study_lamp
 
+# Screens here are a FIRST-BOOT SEED: imported into the SQLite database
+# (storage.path above) the first time the server starts with an empty DB.
+# After that this section is ignored — edit screens at #/settings in the
+# browser instead. Delete the DB file to re-seed from here.
 screens:
   - id: home
     name: Home
@@ -40,10 +47,6 @@ screens:
         cols: 2
         rows: 2
         title: Energy
-      - type: lights
-        cols: 2
-        rows: 2
-        title: Lights
       - type: calendar
         cols: 2
         rows: 2
@@ -51,12 +54,38 @@ screens:
       - type: now-playing
         cols: 2
         title: Now playing
-      # A real HA light with live two-way state (needs the ha integration above):
+      # A single light switch (needs the ha integration above). The UI matches
+      # the entity's capabilities: plain on/off → tap tile, dimmable → vertical
+      # drag-to-dim pill (rows: 2 recommended), colour → pill + colour wheel.
+      # Works for ANY toggleable entity — point it at a switch.* outlet that
+      # feeds a lamp and it gets the simple switch UI automatically.
+      # - type: light
+      #   title: Study
+      #   cols: 1
+      #   rows: 2
+      #   props:
+      #     entity: light.study_lamp
+      #     # label: Study lamp   # override the HA friendly name
+      #     # icon: lamp          # bulb | lamp | lamp-floor | bed | plug
+      #     # variant: dimmer     # force switch | dimmer | colour (default: auto)
+      # A generic two-way toggle for anything else (fans, input_booleans, …):
       # - type: entity-toggle
       #   title: Study
       #   cols: 2
       #   props:
-      #     entity: light.study_lamp
+      #     entity: fan.study_ceiling
+      # A group of lights — master power/brightness, expandable per-light tiles.
+      # Members can mix domains (light.*, adopted switch.* outlets); the master
+      # brightness bar only applies to the dimmable ones:
+      # - type: light-group
+      #   title: Lights
+      #   cols: 2
+      #   rows: 2
+      #   props:
+      #     entities:
+      #       - light.study_lamp
+      #       - light.kitchen_bench
+      #       - switch.lamp_outlet
 
   - id: media
     name: Media

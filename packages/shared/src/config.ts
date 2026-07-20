@@ -9,7 +9,7 @@ import { z } from "zod";
 const idPattern = /^[a-z0-9][a-z0-9-]*$/;
 
 export const WidgetSchema = z.object({
-  /** Widget type from the frontend registry, e.g. "clock", "weather", "lights". */
+  /** Widget type from the frontend registry, e.g. "clock", "weather", "light". */
   type: z.string(),
   title: z.string().optional(),
   /** Grid spans; widgets flow in declaration order. */
@@ -43,6 +43,15 @@ export const IntegrationEntrySchema = z.object({
 });
 export type IntegrationEntry = z.infer<typeof IntegrationEntrySchema>;
 
+export const StorageConfigSchema = z.object({
+  /**
+   * SQLite database file. Relative paths resolve against the config file's
+   * directory, so the default lands at <repo>/data/dashboard.db.
+   */
+  path: z.string().default("../data/dashboard.db"),
+});
+export type StorageConfig = z.infer<typeof StorageConfigSchema>;
+
 export const AmbientConfigSchema = z.object({
   /** Seconds of inactivity before the ambient (lock) screen appears. */
   idleSeconds: z.number().int().min(10).default(120),
@@ -63,10 +72,29 @@ export const DashboardConfigSchema = z.object({
     })
     .default({ host: "0.0.0.0", port: 8090 }),
   ambient: AmbientConfigSchema.default({ idleSeconds: 120, resumeWindowMinutes: 60 }),
+  storage: StorageConfigSchema.default({ path: "../data/dashboard.db" }),
   integrations: z.array(IntegrationEntrySchema).default([]),
-  screens: z.array(ScreenSchema).min(1),
+  /**
+   * First-boot seed only: imported into SQLite when the database is empty;
+   * thereafter the database owns screens (edit them at #/settings).
+   */
+  screens: z.array(ScreenSchema).default([]),
 });
 export type DashboardConfig = z.infer<typeof DashboardConfigSchema>;
+
+/** Body of POST /api/screens — id optional (server slugifies name when absent). */
+export const CreateScreenSchema = ScreenSchema.partial({ id: true });
+export type CreateScreenInput = z.infer<typeof CreateScreenSchema>;
+
+/** Body of PUT /api/screens/:id — id comes from the URL, never the body. */
+export const UpdateScreenSchema = ScreenSchema.omit({ id: true });
+export type UpdateScreenInput = z.infer<typeof UpdateScreenSchema>;
+
+/** Body of POST /api/screens/reorder — must list every screen id exactly once. */
+export const ReorderScreensSchema = z.object({ ids: z.array(z.string()) });
+
+/** Body of PUT /api/screens/generated — bulk replace of onboarding-owned screens. */
+export const ReplaceGeneratedSchema = z.object({ screens: z.array(ScreenSchema) });
 
 /** The shape served to the frontend by GET /api/screens. */
 export interface FrontendBootstrap {

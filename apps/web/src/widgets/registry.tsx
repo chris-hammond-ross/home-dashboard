@@ -4,7 +4,8 @@ import type { WidgetConfig } from "@home-dashboard/shared";
 import { ClockWidget } from "./ClockWidget.js";
 import { WeatherWidget } from "./WeatherWidget.js";
 import { EnergyWidget } from "./EnergyWidget.js";
-import { LightsWidget } from "./LightsWidget.js";
+import { LightWidget } from "./lights/LightWidget.js";
+import { LightGroupWidget } from "./lights/LightGroupWidget.js";
 import { CalendarWidget } from "./CalendarWidget.js";
 import { NowPlayingWidget } from "./NowPlayingWidget.js";
 import { EntityToggleWidget } from "./EntityToggleWidget.js";
@@ -19,7 +20,8 @@ const registry: Record<string, WidgetComponent> = {
   clock: ClockWidget,
   weather: WeatherWidget,
   energy: EnergyWidget,
-  lights: LightsWidget,
+  light: LightWidget,
+  "light-group": LightGroupWidget,
   calendar: CalendarWidget,
   "now-playing": NowPlayingWidget,
   "entity-toggle": EntityToggleWidget,

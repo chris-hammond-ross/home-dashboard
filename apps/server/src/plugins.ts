@@ -28,15 +28,21 @@ interface RunningIntegration {
 export class PluginHost {
   private actions = new Map<string, ActionHandler>();
   private running: RunningIntegration[] = [];
+  private log: Logger;
 
   constructor(
     private hub: TopicHub,
     private makeLogger: (scope: string) => Logger,
-  ) {}
+  ) {
+    this.log = makeLogger("plugins");
+  }
 
   async start(entries: IntegrationEntry[]): Promise<void> {
     for (const entry of entries) {
       if (!entry.enabled) continue;
+      if (entry.id === "core") {
+        throw new Error('integration id "core" is reserved for server-published topics');
+      }
       const def = registry.get(entry.kind);
       if (!def) {
         throw new Error(
@@ -75,6 +81,18 @@ export class PluginHost {
     const handler = this.actions.get(`${integration}:${action}`);
     if (!handler) throw new Error(`Unknown action "${action}" on integration "${integration}"`);
     return await handler(params);
+  }
+
+  /** Invoke an action on every integration that registered it; log-and-continue on error. */
+  async runActionEverywhere(action: string, params: Record<string, unknown>): Promise<void> {
+    for (const [key, handler] of this.actions) {
+      if (!key.endsWith(`:${action}`)) continue;
+      try {
+        await handler(params);
+      } catch (err) {
+        this.log.warn(`action "${key}" failed:`, err);
+      }
+    }
   }
 
   async dispose(): Promise<void> {

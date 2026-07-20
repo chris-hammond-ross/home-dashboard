@@ -4,10 +4,13 @@ import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import fastifyStatic from "@fastify/static";
-import type { FrontendBootstrap } from "@home-dashboard/shared";
 import { findConfigPath, loadConfig } from "./config.js";
+import { openDatabase, resolveDbPath } from "./db/index.js";
+import { ScreenStore } from "./db/screen-store.js";
+import { ScreenService } from "./screens.js";
 import { TopicHub } from "./hub.js";
 import { PluginHost } from "./plugins.js";
+import { registerScreenRoutes } from "./routes/screens.js";
 import { registerWs } from "./ws.js";
 import { makeLogger } from "./log.js";
 
@@ -19,10 +22,21 @@ async function main(): Promise<void> {
   const config = loadConfig(configPath);
   log.info(`config loaded from ${configPath}`);
 
+  const dbPath = resolveDbPath(configPath, config.storage.path);
+  const db = openDatabase(dbPath);
+  log.info(`database at ${dbPath}`);
+  const store = new ScreenStore(db);
+  const imported = store.importFromConfig(config.screens);
+  if (imported >= 0) log.info(`first boot: imported ${imported} screen(s) from YAML`);
+
   const hub = new TopicHub();
   const pluginHost = new PluginHost(hub, makeLogger);
   await pluginHost.start(config.integrations);
   log.info(`integrations up: ${config.integrations.filter((i) => i.enabled).length}`);
+
+  // After plugin start so entity-hints handlers exist; retains core/screens from boot.
+  const screens = new ScreenService(store, hub, pluginHost);
+  screens.broadcast();
 
   const app = Fastify({ logger: false });
   await app.register(websocket);
@@ -32,10 +46,7 @@ async function main(): Promise<void> {
     version: VERSION,
     uptimeSec: Math.round(process.uptime()),
   }));
-  app.get("/api/screens", (): FrontendBootstrap => ({
-    ambient: config.ambient,
-    screens: config.screens,
-  }));
+  registerScreenRoutes(app, screens, config.ambient);
 
   registerWs(app, hub, pluginHost, VERSION);
 
@@ -60,6 +71,7 @@ async function main(): Promise<void> {
     log.info("shutting down");
     await pluginHost.dispose();
     await app.close();
+    db.close();
     process.exit(0);
   };
   process.on("SIGINT", () => void shutdown());

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Center, Loader, SegmentedControl, Text } from "@mantine/core";
+import { Button, Center, Loader, SegmentedControl, Text } from "@mantine/core";
 import type { FrontendBootstrap, ScreenConfig } from "@home-dashboard/shared";
-import { socket, useConnected } from "./lib/socket.js";
+import { socket, useConnected, useTopic } from "./lib/socket.js";
+import { useHashRoute } from "./lib/useHashRoute.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
 import { AmbientScreen } from "./screens/AmbientScreen.js";
+import { SettingsScreen } from "./settings/SettingsScreen.js";
 
 const LAST_VIEW_KEY = "hd.lastView";
 
@@ -25,12 +27,12 @@ function writeLastView(view: LastView): void {
   localStorage.setItem(LAST_VIEW_KEY, JSON.stringify(view));
 }
 
-function defaultScreenId(screens: ScreenConfig[]): string {
-  return (screens.find((s) => s.default) ?? screens[0]!).id;
+function defaultScreenId(screens: ScreenConfig[]): string | null {
+  return (screens.find((s) => s.default) ?? screens[0])?.id ?? null;
 }
 
 /** The resume rule: restore the last view only if it's recent enough. */
-function resolveScreen(bootstrap: FrontendBootstrap): string {
+function resolveScreen(bootstrap: FrontendBootstrap): string | null {
   const stored = readLastView();
   const fresh =
     stored !== null &&
@@ -40,11 +42,18 @@ function resolveScreen(bootstrap: FrontendBootstrap): string {
 }
 
 export function App() {
+  const route = useHashRoute();
+  if (route.startsWith("#/settings")) return <SettingsScreen />;
+  return <KioskApp />;
+}
+
+function KioskApp() {
   const [bootstrap, setBootstrap] = useState<FrontendBootstrap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ambient, setAmbient] = useState(false);
   const [screenId, setScreenId] = useState<string | null>(null);
   const connected = useConnected();
+  const liveScreens = useTopic<ScreenConfig[]>("core/screens");
 
   const lastActivity = useRef(Date.now());
   const ambientRef = useRef(ambient);
@@ -65,6 +74,16 @@ export function App() {
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   }, []);
+
+  // Live screen edits from the settings UI (retained core/screens topic).
+  useEffect(() => {
+    if (!liveScreens) return;
+    setBootstrap((prev) => (prev ? { ...prev, screens: liveScreens } : prev));
+    setScreenId((current) => {
+      if (current && liveScreens.some((s) => s.id === current)) return current;
+      return defaultScreenId(liveScreens);
+    });
+  }, [liveScreens]);
 
   // Track interaction: reset the idle timer, and remember the current view
   // (only while the dashboard is visible — a wake touch must not count).
@@ -95,7 +114,7 @@ export function App() {
       </Center>
     );
   }
-  if (!bootstrap || !screenId) {
+  if (!bootstrap) {
     return (
       <Center h="100%">
         <Loader />
@@ -104,6 +123,20 @@ export function App() {
   }
 
   const screens = bootstrap.screens;
+  if (screens.length === 0) {
+    return (
+      <Center h="100%">
+        <div style={{ textAlign: "center" }}>
+          <Text c="var(--text-secondary)" mb="md">
+            No screens configured.
+          </Text>
+          <Button component="a" href="#/settings" variant="light">
+            Open Settings
+          </Button>
+        </div>
+      </Center>
+    );
+  }
   const active = screens.find((s) => s.id === screenId) ?? screens[0]!;
 
   const wake = () => {

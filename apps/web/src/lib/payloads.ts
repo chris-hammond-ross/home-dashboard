@@ -23,17 +23,6 @@ export interface EnergyPayload {
   ts: string;
 }
 
-export interface LightState {
-  id: string;
-  name: string;
-  room: string;
-  on: boolean;
-}
-
-export interface LightsPayload {
-  lights: LightState[];
-}
-
 export interface CalendarEvent {
   title: string;
   start: number;

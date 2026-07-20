@@ -24,6 +24,9 @@ import { z } from "zod";
  * Actions:
  *   toggle        { entity_id }                    → homeassistant.toggle
  *   call-service  { domain, service, data?, target? }
+ *   entity-hints  { entities: string[] }  — ids referenced by stored screens; published
+ *                                           in addition to the allowlist (server calls this)
+ *   list-entities { domain? }             — slim list of ALL entities (settings UI browser)
  */
 
 const HaConfigSchema = z.object({
@@ -67,17 +70,26 @@ export const homeAssistantIntegration = defineIntegration({
     let unsubscribeEntities: (() => void) | null = null;
     let disposed = false;
     let lastEntities: HassEntities = {};
+    /** Entities referenced by stored screens — published on top of the allowlist. */
+    let hinted = new Set<string>();
+    /** Last object published per entity topic (haws reuses unchanged objects). */
+    const lastPublished = new Map<string, HassEntities[string]>();
     let warnedMissing = false;
 
     const publishStatus = (connected: boolean, extra?: { haVersion?: string; error?: string }) =>
       ctx.publish("status", { connected, url: config.url, ...extra });
 
     const onEntities = (entities: HassEntities) => {
-      const wanted: HassEntities = config.entities?.length
-        ? Object.fromEntries(
-            config.entities.filter((id) => entities[id]).map((id) => [id, entities[id]!]),
-          )
-        : entities;
+      lastEntities = entities;
+      let wanted: HassEntities;
+      if (config.entities?.length) {
+        const ids = new Set([...config.entities, ...hinted]);
+        wanted = Object.fromEntries(
+          [...ids].filter((id) => entities[id]).map((id) => [id, entities[id]!]),
+        );
+      } else {
+        wanted = entities; // no allowlist → publish everything (hints are a no-op)
+      }
 
       if (config.entities?.length && !warnedMissing) {
         const missing = config.entities.filter((id) => !(id in entities));
@@ -94,8 +106,8 @@ export const homeAssistantIntegration = defineIntegration({
       for (const [id, entity] of Object.entries(wanted)) {
         const friendlyName = entity.attributes.friendly_name as string | undefined;
         summary[id] = { state: entity.state, friendlyName };
-        // haws reuses unchanged entity objects, so a reference change = a real update
-        if (lastEntities[id] !== entity) {
+        if (lastPublished.get(id) !== entity) {
+          lastPublished.set(id, entity);
           ctx.publish(`entity/${id}`, {
             entityId: id,
             state: entity.state,
@@ -106,7 +118,6 @@ export const homeAssistantIntegration = defineIntegration({
         }
       }
       ctx.publish("states", summary);
-      lastEntities = entities;
     };
 
     const connect = async (): Promise<void> => {
@@ -157,6 +168,30 @@ export const homeAssistantIntegration = defineIntegration({
       const { domain, service, data, target } = CallServiceParams.parse(params);
       await callService(requireConnection(), domain, service, data, target);
       return { called: `${domain}.${service}` };
+    });
+
+    // Registered before connect() on purpose: both must work while HA is down.
+    ctx.registerAction("entity-hints", (params) => {
+      const ids = Array.isArray(params.entities)
+        ? params.entities.filter((id): id is string => typeof id === "string")
+        : [];
+      hinted = new Set(ids);
+      // Re-run with the new wanted set so newly-referenced entities publish now.
+      if (Object.keys(lastEntities).length) onEntities(lastEntities);
+      return { hinted: hinted.size };
+    });
+
+    ctx.registerAction("list-entities", (params) => {
+      const domain = typeof params.domain === "string" && params.domain ? params.domain : undefined;
+      return Object.entries(lastEntities)
+        .filter(([id]) => !domain || id.startsWith(`${domain}.`))
+        .map(([id, entity]) => ({
+          id,
+          friendlyName: (entity.attributes.friendly_name as string | undefined) ?? id,
+          domain: id.split(".")[0]!,
+          state: entity.state,
+        }))
+        .sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
     });
 
     publishStatus(false); // topic exists immediately; flips to true on connect

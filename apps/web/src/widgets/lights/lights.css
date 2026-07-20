@@ -1,0 +1,618 @@
+/*
+ * Light switch family (from temp/lightswitch-v2-lumen.html):
+ *   .lw-simple*  01 simple tap tile          (LightWidget)
+ *   .lw-pill*    02/03 vertical dimmer pill  (LightWidget)
+ *   .lw-sheet*   03 colour modal             (LightWidget)
+ *   .lw-root…    04 group panel              (LightGroupWidget)
+ * Namespaced .lw-*; surfaces/inks come from tokens.css, the accent is each
+ * light's actual colour (inline styles computed from live HA state).
+ */
+
+/* ── 01 · simple tap tile ── */
+
+.lw-simple {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: left;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--hairline);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.12s,
+    border-color 0.25s,
+    box-shadow 0.25s,
+    background 0.25s;
+}
+
+.lw-simple:active {
+  transform: scale(0.97);
+}
+
+.lw-simple.is-unavailable {
+  opacity: 0.45;
+  border-style: dashed;
+  cursor: default;
+}
+
+.lw-simple.is-unavailable:active {
+  transform: none;
+}
+
+.lw-simple-lock {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  color: var(--text-muted);
+}
+
+.lw-simple-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+
+.lw-simple-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lw-simple-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lw-simple-stat {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── 02/03 · dimmer pill ── */
+
+.lw-ptile {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.lw-pill {
+  position: relative;
+  width: 92px;
+  flex: 1;
+  min-height: 84px;
+  max-height: 220px;
+  border-radius: 30px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--hairline);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+
+.lw-pill.is-disabled {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.45;
+}
+
+.lw-pill-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  transition: height 0.25s;
+}
+
+.lw-pill.is-dragging .lw-pill-fill {
+  transition: height 0.1s linear;
+}
+
+.lw-pill-pct {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.lw-pill-icon {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.lw-pmeta {
+  text-align: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lw-pname {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lw-pstat {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* colour-wheel button — inner dot shows the light's current colour */
+.lw-cbtn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  cursor: pointer;
+  background: conic-gradient(#ef5350, #ffb300, #9ccc2e, #26c6da, #5c6bc0, #ab47bc, #ef5350);
+  position: relative;
+  padding: 0;
+}
+
+.lw-cbtn::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--cur, #fff);
+  box-shadow: 0 0 0 2px var(--surface-1);
+}
+
+.lw-cbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── 03 · colour modal ── */
+
+.lw-sheet {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  color: var(--text-primary);
+}
+
+.lw-sheet-body {
+  padding: 22px;
+}
+
+.lw-sheet-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.lw-sheet-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.lw-sheet-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.lw-sheet-x {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.lw-swgrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.lw-sw {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  min-height: 44px;
+  padding: 0;
+}
+
+.lw-sw[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
+}
+
+.lw-huelabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+input[type="range"].lw-hue {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 48px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+input[type="range"].lw-hue::-webkit-slider-runnable-track {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #ef5350,
+    #ffb300,
+    #9ccc2e,
+    #26c6da,
+    #5c6bc0,
+    #ab47bc,
+    #ef5350
+  );
+}
+
+input[type="range"].lw-hue::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--page-plane);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  margin-top: -7px;
+}
+
+input[type="range"].lw-hue::-moz-range-track {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #ef5350,
+    #ffb300,
+    #9ccc2e,
+    #26c6da,
+    #5c6bc0,
+    #ab47bc,
+    #ef5350
+  );
+}
+
+input[type="range"].lw-hue::-moz-range-progress {
+  background: transparent;
+}
+
+input[type="range"].lw-hue::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--page-plane);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.lw-done {
+  width: 100%;
+  height: 48px;
+  margin-top: 16px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  background: var(--text-primary);
+  color: var(--page-plane);
+  font-weight: 600;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+/* ── 04 · group panel ── */
+
+.lw-root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.lw-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lw-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.lw-count {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.lw-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.lw-roundbtn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.06);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    color 0.25s;
+}
+
+.lw-roundbtn:active {
+  transform: scale(0.94);
+}
+
+.lw-roundbtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* master power: solid when every light is on, dashed when only some are */
+.lw-power.on {
+  background: hsl(40 95% 62%);
+  border-color: hsl(40 95% 62%);
+  color: #141414;
+}
+
+.lw-power.mixed {
+  border: 2px dashed hsl(40 95% 62% / 0.8);
+  color: hsl(40 95% 62%);
+}
+
+.lw-chevron svg {
+  transition: transform 0.25s;
+}
+
+.lw-chevron[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* horizontal brightness bar — tap or drag sets the value */
+.lw-hbar {
+  position: relative;
+  height: 46px;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--hairline);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.lw-hbar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  transition: width 0.1s linear;
+}
+
+.lw-hbar-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+
+.lw-hbar.lw-mini {
+  height: 34px;
+  border-radius: 11px;
+}
+
+.lw-hbar.lw-mini .lw-hbar-label {
+  font-size: 11px;
+  padding: 0 10px;
+  color: var(--text-secondary);
+}
+
+.lw-hbar.is-disabled {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.45;
+}
+
+/* one glowing dot per light, coloured by its live state */
+.lw-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.lw-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  transition:
+    background 0.25s,
+    box-shadow 0.25s;
+}
+
+/* expandable per-light grid */
+.lw-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s;
+  min-height: 0;
+}
+
+.lw-body.open {
+  grid-template-rows: 1fr;
+}
+
+.lw-body > div {
+  overflow: hidden;
+}
+
+.lw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.lw-tile {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  padding: 12px;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+
+.lw-tile.is-unavailable {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+.lw-tile-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 4px;
+  min-height: 44px;
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+}
+
+.lw-tile.is-unavailable .lw-tile-top {
+  cursor: default;
+}
+
+.lw-tile-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+
+.lw-tile-name {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lw-tile-stat {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.lw-tile .lw-hbar {
+  margin-top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-root *,
+  .lw-root,
+  .lw-simple,
+  .lw-simple *,
+  .lw-ptile *,
+  .lw-sheet * {
+    transition: none !important;
+  }
+}

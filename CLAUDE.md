@@ -9,13 +9,21 @@ server; the frontend gets everything over ONE WebSocket.
 - `pnpm dev` — server (tsx, :8090) + web (Vite, :5173, proxies /api and /ws)
 - `pnpm typecheck` / `pnpm build` / `pnpm format` — CI runs format:check, typecheck, build
 - `pnpm ha:explore [--domain light]` — list every Home Assistant entity (uses .env)
-- `pnpm onboard [--dry-run|--yes|--flat]` — generate per-room screens from HA areas.
-  Owns only screens marked `generated: true` and appends to the entities allowlist;
-  never touches user screens. Domain→widget capability map lives in the script —
-  extend it when adding a new widget type.
+- `pnpm onboard [--dry-run|--yes|--flat|--server <url>]` — generate per-room screens
+  from HA areas and PUSH them to the **running server** (`PUT /api/screens/generated`;
+  start `pnpm dev` first). The server replaces only screens marked `generated: true`,
+  never user screens; any UI edit clears the flag (adoption). Allowlist append into
+  local.yaml unchanged. Domain→widget capability map lives in the script — extend it
+  when adding a new widget type.
 - `DASHBOARD_CONFIG=<path>` overrides config; otherwise `config/local.yaml` (gitignored) then `config/example.yaml`
-- Config is read **once at startup** — restart the dev server after YAML changes
-- Manual WS smoke test: `node apps/server/scripts/ws-probe.mjs` (server must be running)
+- Config is read **once at startup** — restart the dev server after YAML changes.
+  EXCEPT screens: they live in SQLite (`storage.path`, default `data/dashboard.db`,
+  path relative to the config file). The YAML `screens:` block is a first-boot seed,
+  imported only when the DB is empty AND the `meta.screens_imported` flag is unset;
+  delete the DB file to re-seed. Edit screens at `#/settings` in the browser.
+- Manual smoke tests: `node apps/server/scripts/ws-probe.mjs` (server must be running),
+  `node apps/server/scripts/screens-probe.mjs` (self-contained: builds nothing, boots
+  the built server on :8099 with a scratch config/DB and exercises REST + WS)
 
 ## Architecture (data flow)
 
@@ -30,6 +38,21 @@ integration plugin ──publish──► TopicHub (retains last payload per top
 - **Actions** are `socket.action(integrationId, name, params)` → integration handler.
 - Config schemas are Zod (v4 — note `z.url()`, `z.prettifyError`, two-arg `z.record`).
   `${VAR}` in any config string is expanded from the environment / repo-root `.env`.
+- **Screens are DB-backed** (better-sqlite3; `apps/server/src/db/` + `ScreenStore` +
+  `ScreenService`). The integration id `core` is reserved: the server itself publishes
+  the retained `core/screens` topic (full ordered screens array) after every mutation —
+  the kiosk and settings UI update live from it. REST CRUD: GET/POST `/api/screens`,
+  PUT/DELETE `/api/screens/:id`, POST `/api/screens/reorder`, POST
+  `/api/screens/:id/default`, PUT `/api/screens/generated` (ids `generated`/`reorder`/
+  `default` are reserved). Invariant: exactly one default screen whenever screens exist.
+- **Entity hints**: after every screens mutation the server calls the `entity-hints`
+  action on every integration that registered one, passing all entity ids referenced by
+  widgets (props `entity`/`entities`). The HA integration publishes
+  allowlist ∪ hinted — so a widget added in the settings UI gets data without a config
+  edit or restart. `list-entities` action returns ALL entities for the settings browser.
+- `#/settings` (tiny hash router, no lib) is the screen/widget editor; widget editor
+  metadata lives in `apps/web/src/widgets/meta.ts` — register new widget types there
+  AND in `registry.tsx`.
 
 ## Home Assistant integration (packages/integrations/home-assistant)
 
