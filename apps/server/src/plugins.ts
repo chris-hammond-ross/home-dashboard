@@ -8,15 +8,16 @@ import type {
 } from "@home-dashboard/shared";
 import demoIntegration from "@home-dashboard/integration-demo";
 import homeAssistantIntegration from "@home-dashboard/integration-home-assistant";
+import weatherIntegration from "@home-dashboard/integration-weather";
 import type { TopicHub } from "./hub.js";
 
 /**
- * Built-in integration kinds. Next up: kodi, calendar, weather, mqtt-devices.
+ * Built-in integration kinds. Next up: kodi, calendar, mqtt-devices.
  * Third-party/dynamic loading is a later concern.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const registry = new Map<string, IntegrationDefinition<any>>(
-  [demoIntegration, homeAssistantIntegration].map((def) => [def.kind, def]),
+  [demoIntegration, homeAssistantIntegration, weatherIntegration].map((def) => [def.kind, def]),
 );
 
 interface RunningIntegration {

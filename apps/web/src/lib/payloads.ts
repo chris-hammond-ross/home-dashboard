@@ -4,6 +4,15 @@
  * the contract every integration publishes against.
  */
 
+/** One day of the forecast. `highC`/`lowC` are in the payload's configured unit. */
+export interface WeatherDay {
+  /** ISO date (yyyy-mm-dd) — the widget derives the weekday label from this. */
+  date: string;
+  condition: string;
+  highC: number;
+  lowC: number;
+}
+
 export interface WeatherPayload {
   tempC: number;
   feelsLikeC: number;
@@ -12,6 +21,12 @@ export interface WeatherPayload {
   lowC: number;
   humidity: number;
   windKmh: number;
+  /** Place name for the widget header, e.g. "Adelaide". Omit to hide. */
+  location?: string;
+  /** Degree unit the temperatures are expressed in. Defaults to Celsius. */
+  tempUnit?: "C" | "F";
+  /** Multi-day outlook (first entry = today). Omit if the source has none. */
+  daily?: WeatherDay[];
 }
 
 export interface EnergyPayload {
@@ -45,9 +60,15 @@ export interface NowPlayingPayload {
 
 export const CONDITION_GLYPHS: Record<string, string> = {
   sunny: "☀️",
-  "partly-cloudy": "⛅",
-  cloudy: "☁️",
-  showers: "🌧️",
-  storm: "⛈️",
+  clear: "☀️",
   "clear-night": "🌙",
+  "partly-cloudy": "⛅",
+  "partly-cloudy-night": "☁️",
+  cloudy: "☁️",
+  fog: "🌫️",
+  showers: "🌧️",
+  rain: "🌧️",
+  snow: "🌨️",
+  storm: "⛈️",
+  windy: "🌬️",
 };

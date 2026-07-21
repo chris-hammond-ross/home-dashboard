@@ -19,12 +19,23 @@ export interface PropField {
   help?: string;
 }
 
+/** One selectable visual variant of a widget type (see registry.tsx). */
+export interface WidgetVariantMeta {
+  id: string;
+  label: string;
+  description?: string;
+}
+
 export interface WidgetMeta {
   type: string;
   label: string;
   description: string;
   defaultSpans: { cols: number; rows: number };
   fields: PropField[];
+  /** Present only for widget types that ship more than one visual variant. */
+  variants?: WidgetVariantMeta[];
+  /** Which variant id applies when config.variant is unset. */
+  defaultVariant?: string;
 }
 
 export const widgetMeta: WidgetMeta[] = [
@@ -38,9 +49,27 @@ export const widgetMeta: WidgetMeta[] = [
   {
     type: "weather",
     label: "Weather",
-    description: "Current conditions from a weather topic",
-    defaultSpans: { cols: 2, rows: 1 },
-    fields: [{ key: "topic", label: "Topic", kind: "topic", placeholder: "demo/weather" }],
+    description: "Conditions + 7-day forecast",
+    defaultSpans: { cols: 2, rows: 3 },
+    defaultVariant: "nocturne",
+    variants: [
+      { id: "nocturne", label: "Nocturne", description: "Glass cards over a drifting aurora" },
+      { id: "ember", label: "Ember", description: "Warm serif hero with a 7-day range list" },
+      {
+        id: "meridian",
+        label: "Meridian",
+        description: "Monospaced instrument panel + outlook strip",
+      },
+    ],
+    fields: [
+      {
+        key: "topic",
+        label: "Topic",
+        kind: "topic",
+        placeholder: "demo/weather",
+        help: "A weather stream, e.g. demo/weather or weather/weather from the weather integration.",
+      },
+    ],
   },
   {
     type: "energy",
@@ -104,6 +133,94 @@ export const widgetMeta: WidgetMeta[] = [
     fields: [
       { key: "entity", label: "Entity", kind: "entity" },
       { key: "label", label: "Label", kind: "text", placeholder: "HA friendly name" },
+    ],
+  },
+  {
+    type: "home-power-flow",
+    label: "Home power flow",
+    description: "Live power flow between grid, solar, battery and home",
+    defaultSpans: { cols: 2, rows: 2 },
+    defaultVariant: "node-map",
+    variants: [
+      { id: "node-map", label: "Node map", description: "Circular nodes with flowing particles" },
+      { id: "switchboard", label: "Switchboard", description: "Source cards feeding a bus rail" },
+    ],
+    fields: [
+      {
+        key: "solarEntity",
+        label: "Solar power",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Generation in W (or kW). Omit if you have no solar.",
+      },
+      {
+        key: "gridEntity",
+        label: "Grid power",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Signed: positive = importing, negative = exporting.",
+      },
+      {
+        key: "invertGrid",
+        label: "Invert grid sign",
+        kind: "boolean",
+        help: "Enable if import/export are reversed (e.g. GoodWe meters).",
+      },
+      {
+        key: "gridImportEntity",
+        label: "Grid import",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Only if you have no signed grid sensor — pair with Grid export.",
+      },
+      {
+        key: "gridExportEntity",
+        label: "Grid export",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Only if you have no signed grid sensor — pair with Grid import.",
+      },
+      {
+        key: "batteryEntity",
+        label: "Battery power",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Signed: positive = charging, negative = discharging.",
+      },
+      {
+        key: "invertBattery",
+        label: "Invert battery sign",
+        kind: "boolean",
+        help: "Enable if charging/discharging appear swapped.",
+      },
+      {
+        key: "batteryChargeEntity",
+        label: "Battery charge",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Only if you have no signed battery sensor — pair with Battery discharge.",
+      },
+      {
+        key: "batteryDischargeEntity",
+        label: "Battery discharge",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Only if you have no signed battery sensor — pair with Battery charge.",
+      },
+      {
+        key: "batterySocEntity",
+        label: "Battery charge %",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "State of charge, 0–100.",
+      },
+      {
+        key: "homeEntity",
+        label: "Home load",
+        kind: "entity",
+        domains: ["sensor"],
+        help: "Optional — computed from the balance when omitted.",
+      },
     ],
   },
 ];

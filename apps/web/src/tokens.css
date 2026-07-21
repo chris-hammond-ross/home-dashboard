@@ -27,6 +27,14 @@
   --status-serious: #ec835a;
   --status-critical: #d03b3b;
 
+  /* power-flow roles — one fixed color per role, each paired with its word */
+  --flow-solar: #d6a155; /* generation  */
+  --flow-grid: #5f8cc9; /* grid import */
+  --flow-export: #4baf9b; /* export      */
+  --flow-battery: #63b87b; /* discharge   */
+  --flow-charge: #9683cf; /* charging    */
+  --flow-idle: #39415a; /* inactive    */
+
   --radius-card: 16px;
 }
 

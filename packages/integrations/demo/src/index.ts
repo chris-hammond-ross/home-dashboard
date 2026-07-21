@@ -69,6 +69,24 @@ export const demoIntegration = defineIntegration({
     });
 
     // --- weather ------------------------------------------------------------
+    // A believable, stable 7-day outlook (first entry = today) so the weather
+    // widget variants render fully without a real weather integration.
+    const forecast: { condition: string; highC: number; lowC: number }[] = [
+      { condition: "partly-cloudy", highC: 17, lowC: 6 },
+      { condition: "cloudy", highC: 16, lowC: 7 },
+      { condition: "showers", highC: 14, lowC: 5 },
+      { condition: "showers", highC: 13, lowC: 4 },
+      { condition: "storm", highC: 15, lowC: 5 },
+      { condition: "partly-cloudy", highC: 16, lowC: 7 },
+      { condition: "sunny", highC: 18, lowC: 8 },
+    ];
+    const dailyForecast = () =>
+      forecast.map((day, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        return { date: date.toISOString().slice(0, 10), ...day };
+      });
+
     let temp = 14; // wintry Australian morning
     let conditionIdx = 1;
     const publishWeather = () => {
@@ -80,10 +98,13 @@ export const demoIntegration = defineIntegration({
         tempC: Math.round(temp * 10) / 10,
         feelsLikeC: Math.round((temp - 1.5) * 10) / 10,
         condition,
-        highC: 17,
-        lowC: 6,
+        highC: forecast[0]!.highC,
+        lowC: forecast[0]!.lowC,
         humidity: Math.round(clamp(jitter(65, 5), 30, 95)),
         windKmh: Math.round(clamp(jitter(12, 4), 0, 60)),
+        location: "Adelaide",
+        tempUnit: "C",
+        daily: dailyForecast(),
       });
     };
     publishWeather();

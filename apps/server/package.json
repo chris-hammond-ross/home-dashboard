@@ -16,6 +16,7 @@
     "better-sqlite3": "^12.2.0",
     "@home-dashboard/integration-demo": "workspace:*",
     "@home-dashboard/integration-home-assistant": "workspace:*",
+    "@home-dashboard/integration-weather": "workspace:*",
     "@home-dashboard/shared": "workspace:*",
     "fastify": "^5.0.0",
     "ws": "^8.18.0",

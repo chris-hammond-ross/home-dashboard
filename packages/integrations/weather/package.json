@@ -1,0 +1,24 @@
+{
+  "name": "@home-dashboard/integration-weather",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Weather integration: live conditions + 7-day forecast from Open-Meteo, auto-located by IP.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@home-dashboard/shared": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

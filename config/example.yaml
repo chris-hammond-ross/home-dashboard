@@ -20,6 +20,20 @@ integrations:
     kind: demo
     # config: { tickMs: 2000 }
 
+  # Real weather — live conditions + 7-day forecast from Open-Meteo (no API key).
+  # Auto-locates by this machine's public IP; publishes to weather/weather.
+  # Point the weather widget's `topic` at weather/weather to use it.
+  # - id: weather
+  #   kind: weather
+  #   config:
+  #     # Location precedence: lat+lon → location name → auto (IP). Pick one:
+  #     # latitude: -34.93
+  #     # longitude: 138.60
+  #     # location: Adelaide          # geocoded via Open-Meteo
+  #     temperatureUnit: celsius      # celsius | fahrenheit
+  #     windSpeedUnit: kmh            # kmh | mph | ms | kn
+  #     refreshMinutes: 15
+
   # Real Home Assistant — full walkthrough in docs/home-assistant.md
   # - id: ha
   #   kind: home-assistant
@@ -41,8 +55,16 @@ screens:
     widgets:
       - type: clock
         cols: 2
+      # Weather with a 7-day forecast. Ships three looks — pick one with `variant`
+      # (default nocturne): nocturne (glass/aurora) · ember (warm serif) ·
+      # meridian (mono instrument panel). Reads demo/weather until you add the
+      # weather integration above, then set topic: weather/weather.
       - type: weather
         cols: 2
+        rows: 3
+        variant: nocturne
+        # props:
+        #   topic: weather/weather
       - type: energy
         cols: 2
         rows: 2
@@ -86,6 +108,28 @@ screens:
       #       - light.study_lamp
       #       - light.kitchen_bench
       #       - switch.lamp_outlet
+      # Live power flow between grid, solar, battery and home (needs the ha
+      # integration). Ships two looks — pick one with `variant` (default node-map):
+      #   variant: node-map    # circular nodes with flowing particles
+      #   variant: switchboard # source cards feeding a switchboard bus
+      # Only the sensors you set are shown, so a grid-only home just needs
+      # gridEntity. Grid/battery power may be a single SIGNED sensor (grid: +import
+      # / -export; battery: +charge / -discharge) OR separate directional sensors.
+      # - type: home-power-flow
+      #   title: Power
+      #   cols: 3
+      #   rows: 2
+      #   variant: node-map
+      #   props:
+      #     solarEntity: sensor.solar_power
+      #     gridEntity: sensor.grid_power          # signed; or use the two below
+      #     # gridImportEntity: sensor.grid_import_power
+      #     # gridExportEntity: sensor.grid_export_power
+      #     batteryEntity: sensor.battery_power     # signed; or use the two below
+      #     # batteryChargeEntity: sensor.battery_charge_power
+      #     # batteryDischargeEntity: sensor.battery_discharge_power
+      #     batterySocEntity: sensor.battery_soc
+      #     # homeEntity: sensor.home_load          # optional; else computed
 
   - id: media
     name: Media

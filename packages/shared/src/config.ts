@@ -12,6 +12,11 @@ export const WidgetSchema = z.object({
   /** Widget type from the frontend registry, e.g. "clock", "weather", "light". */
   type: z.string(),
   title: z.string().optional(),
+  /**
+   * Which visual variant of the widget to render, for types that register more
+   * than one (see the frontend registry). Omit to use the type's default variant.
+   */
+  variant: z.string().optional(),
   /** Grid spans; widgets flow in declaration order. */
   cols: z.number().int().min(1).default(1),
   rows: z.number().int().min(1).default(1),

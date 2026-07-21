@@ -1,0 +1,328 @@
+/*
+ * Home power-flow widget — shared styles for both variants. Colors come from the
+ * `--flow-*` design tokens (tokens.css); per-lane accent (`--c`) and bus glow
+ * (`--busglow`) are set inline from live data. Dark-first, like the whole panel.
+ */
+
+/* ── node map ─────────────────────────────────────────────────────────────── */
+.pf-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.pf-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ── switchboard ──────────────────────────────────────────────────────────── */
+.pf-boardwrap {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+}
+.pf-board {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  min-width: 480px;
+  min-height: 0;
+}
+.pf-channels {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  min-width: 0;
+}
+.pf-channel {
+  display: flex;
+  align-items: center;
+}
+
+.pf-card {
+  width: 190px;
+  flex-shrink: 0;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.pf-cardhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.pf-cardicon {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+.pf-cardicon svg {
+  width: 20px;
+  height: 20px;
+}
+.pf-cardname {
+  font-size: 13px;
+  color: var(--text-muted);
+  flex: 1;
+}
+.pf-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--flow-idle);
+  flex-shrink: 0;
+}
+.pf-cardval {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.pf-chip {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--hairline);
+  color: var(--text-muted);
+}
+.pf-socwrap {
+  margin-top: 10px;
+}
+.pf-socbar {
+  height: 5px;
+  background: var(--page-plane);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pf-socfill {
+  height: 100%;
+  background: var(--flow-battery);
+  border-radius: 3px;
+  transition: width 0.4s;
+}
+.pf-soclabel {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* flow lanes */
+.pf-lane {
+  flex: 1;
+  min-width: 60px;
+  height: 22px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pf-beam {
+  width: 100%;
+  height: 12px;
+  position: relative;
+}
+.pf-lane.idle .pf-beam {
+  height: 0;
+  border-top: 1px dashed var(--hairline);
+}
+.pf-lane.active .pf-beam::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--c);
+  opacity: 0.22;
+  transform: translateY(-50%);
+}
+.pf-lane.active .pf-beam {
+  background-image: radial-gradient(circle, var(--c) 0 2px, transparent 5.5px);
+  background-size: 46px 100%;
+  background-repeat: repeat-x;
+  background-position: 0 center;
+  animation: pf-flow-r var(--dur, 0.5s) linear infinite;
+}
+.pf-lane.active.reverse .pf-beam {
+  animation-name: pf-flow-l;
+}
+.pf-lane.active::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transform: translateY(-50%);
+  opacity: 0.7;
+}
+.pf-lane.active:not(.reverse)::after {
+  right: -1px;
+  border-left: 6px solid var(--c);
+}
+.pf-lane.active.reverse::after {
+  left: -1px;
+  border-right: 6px solid var(--c);
+}
+.pf-lanekw {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+@keyframes pf-flow-r {
+  to {
+    background-position: 46px center;
+  }
+}
+@keyframes pf-flow-l {
+  to {
+    background-position: -46px center;
+  }
+}
+
+/* the switchboard bus */
+.pf-bus {
+  width: 12px;
+  border-radius: 6px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.pf-bus::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--busglow, var(--flow-idle)) 50%,
+    transparent
+  );
+  animation: pf-bus-breathe 5s ease-in-out infinite;
+}
+@keyframes pf-bus-breathe {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.38;
+  }
+}
+
+.pf-homelane {
+  width: 70px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.pf-homelane .pf-lane {
+  min-width: 0;
+}
+
+/* home master panel */
+.pf-home {
+  width: 210px;
+  flex-shrink: 0;
+  align-self: center;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 14px;
+}
+.pf-home-icon {
+  color: var(--text-primary);
+}
+.pf-home-name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.pf-homeval {
+  font-size: 28px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin: 2px 0 12px;
+  color: var(--text-primary);
+}
+.pf-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.pf-mix {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--page-plane);
+  margin-bottom: 10px;
+}
+.pf-mix i {
+  display: block;
+  height: 100%;
+  transition: width 0.5s;
+}
+.pf-mixrows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pf-mixrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pf-mixrow b {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.pf-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.pf-busnotes {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-lane.active .pf-beam {
+    animation: none;
+  }
+  .pf-bus::before {
+    animation: none;
+    opacity: 0.28;
+  }
+}

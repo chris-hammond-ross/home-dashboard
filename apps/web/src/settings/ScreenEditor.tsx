@@ -304,6 +304,17 @@ function WidgetRow({
       </Group>
       <Collapse in={open}>
         <Divider my="sm" />
+        {meta?.variants?.length ? (
+          <Select
+            size="sm"
+            mb="sm"
+            label="Style"
+            description="Pick the visual variant of this widget"
+            data={meta.variants.map((v) => ({ value: v.id, label: v.label }))}
+            value={widget.variant ?? meta.defaultVariant ?? null}
+            onChange={(value) => onChange({ ...widget, variant: value ?? undefined })}
+          />
+        ) : null}
         <WidgetPropsForm
           fields={meta?.fields ?? []}
           props={widget.props}

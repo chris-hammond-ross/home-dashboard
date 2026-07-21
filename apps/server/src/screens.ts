@@ -4,18 +4,26 @@ import type { PluginHost } from "./plugins.js";
 import type { ScreenStore } from "./db/screen-store.js";
 
 /**
- * Entity ids referenced anywhere in the given screens: any widget prop named
- * `entity` (string) or `entities` (string[]), regardless of widget type.
- * Integrations use these hints to publish entities beyond their allowlist.
+ * Entity ids referenced anywhere in the given screens, regardless of widget
+ * type: any widget prop whose key is `entity` / `entities` OR ends in `Entity`
+ * (string) / `Entities` (string[]). The suffix convention lets multi-entity
+ * widgets (e.g. home-power-flow's `gridEntity`, `batterySocEntity`) name their
+ * props by role and still get auto-hinted. Integrations use these hints to
+ * publish entities beyond their allowlist.
  */
 export function extractEntityIds(screens: ScreenConfig[]): string[] {
   const ids = new Set<string>();
+  const addString = (v: unknown) => {
+    if (typeof v === "string" && v) ids.add(v);
+  };
+  const addArray = (v: unknown) => {
+    if (Array.isArray(v)) for (const id of v) addString(id);
+  };
   for (const screen of screens) {
     for (const widget of screen.widgets) {
-      const { entity, entities } = widget.props;
-      if (typeof entity === "string" && entity) ids.add(entity);
-      if (Array.isArray(entities)) {
-        for (const id of entities) if (typeof id === "string" && id) ids.add(id);
+      for (const [key, value] of Object.entries(widget.props)) {
+        if (key === "entity" || /Entity$/.test(key)) addString(value);
+        if (key === "entities" || /Entities$/.test(key)) addArray(value);
       }
     }
   }
