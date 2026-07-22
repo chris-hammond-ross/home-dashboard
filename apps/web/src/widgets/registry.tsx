@@ -62,7 +62,7 @@ function resolve(entry: RegistryEntry | undefined, variant: string | undefined) 
 /** Shared card chrome: fills its grid cell, optional mini-label title. */
 export function WidgetCard({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <Card h="100%" style={{ overflow: "hidden" }}>
+    <Card h="100%" style={{ overflow: "hidden", border: "none" }}>
       <Stack gap="xs" h="100%">
         {title ? (
           <Text size="xs" tt="uppercase" fw={600} lts="0.08em" c="var(--text-muted)">
