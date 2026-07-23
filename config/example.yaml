@@ -130,6 +130,26 @@ screens:
       #     # batteryDischargeEntity: sensor.battery_discharge_power
       #     batterySocEntity: sensor.battery_soc
       #     # homeEntity: sensor.home_load          # optional; else computed
+      # Climate control for a thermostat / AC head unit (needs the ha
+      # integration). Temperature, HVAC mode and fan speed are all driven by the
+      # entity's own capabilities. Ships three looks — pick one with `variant`
+      # (default radial): radial (drag dial) · studio (channel-strip) · bento
+      # (tile grid). Add `zoneEntities` for ducted-zone dampers (AirTouch /
+      # Advantage Air) — cover.* zones expose damper position %, fan.* expose
+      # speed %, climate.* zones toggle on/off. Recommended span cols 2, rows 4.
+      # Runs on the demo integration too — set props.integration: demo and point
+      # entity at climate.living_room (zones cover.living_zone / cover.bedroom_zone).
+      # - type: climate-control
+      #   title: Living Room
+      #   cols: 2
+      #   rows: 4
+      #   variant: radial
+      #   props:
+      #     entity: climate.living_room
+      #     # label: Living Room AC   # override the HA friendly name
+      #     # zoneEntities:
+      #     #   - cover.living_zone
+      #     #   - cover.bedroom_zone
 
   - id: media
     name: Media

@@ -171,8 +171,115 @@ export const demoIntegration = defineIntegration({
     publishNowPlaying();
     ctx.every(5_000, publishNowPlaying);
 
+    // --- climate (thermostat + ducted zone dampers) ------------------------
+    // Published in the SAME shape as the Home Assistant integration
+    // (entity/<id> → { entityId, state, attributes, … }) so the climate-control
+    // widget works against `integration: demo` with zero HA. `call-service` /
+    // `toggle` mutate this in-memory state and re-publish, exercising the full
+    // control round-trip.
+    const climate = { mode: "cool", target: 23, fan: "auto" };
+    const zones = [
+      { id: "cover.living_zone", name: "Living Zone", position: 85 },
+      { id: "cover.bedroom_zone", name: "Bedroom Zone", position: 45 },
+    ];
+    let indoor = 22.4;
+
+    const publishEntity = (id: string, state: string, attributes: Record<string, unknown>) => {
+      const now = new Date().toISOString();
+      ctx.publish(`entity/${id}`, {
+        entityId: id,
+        state,
+        attributes,
+        lastChanged: now,
+        lastUpdated: now,
+      });
+    };
+    const hvacAction = (): string => {
+      if (climate.mode === "off") return "off";
+      if (climate.mode === "fan_only") return "fan";
+      if (climate.mode === "dry") return "drying";
+      const heating = climate.mode === "heat" || climate.mode === "heat_cool";
+      const cooling = climate.mode === "cool" || climate.mode === "heat_cool";
+      if (cooling && indoor > climate.target + 0.3) return "cooling";
+      if (heating && indoor < climate.target - 0.3) return "heating";
+      return "idle";
+    };
+    const publishClimate = () =>
+      publishEntity("climate.living_room", climate.mode, {
+        friendly_name: "Living Room AC",
+        hvac_modes: ["off", "cool", "heat", "heat_cool", "dry", "fan_only"],
+        hvac_action: hvacAction(),
+        current_temperature: Math.round(indoor * 10) / 10,
+        temperature: climate.target,
+        min_temp: 16,
+        max_temp: 30,
+        target_temp_step: 0.5,
+        fan_mode: climate.fan,
+        fan_modes: ["auto", "low", "medium", "high"],
+        temperature_unit: "°C",
+      });
+    const publishZone = (z: { id: string; name: string; position: number }) =>
+      publishEntity(z.id, z.position > 0 ? "open" : "closed", {
+        friendly_name: z.name,
+        current_position: z.position,
+        device_class: "damper",
+      });
+    publishClimate();
+    zones.forEach(publishZone);
+
+    // Nudge the room temperature toward the setpoint while conditioning.
+    ctx.every(config.tickMs, () => {
+      const action = hvacAction();
+      if (action === "cooling") indoor = clamp(indoor - 0.05, 16, 32);
+      else if (action === "heating") indoor = clamp(indoor + 0.05, 10, 30);
+      else indoor = clamp(jitter(indoor, 0.04), 10, 32);
+      publishClimate();
+    });
+
+    ctx.registerAction("call-service", (params) => {
+      const domain = String(params.domain ?? "");
+      const service = String(params.service ?? "");
+      const data = (params.data ?? {}) as Record<string, unknown>;
+      const target = (params.target ?? {}) as { entity_id?: string | string[] };
+      const targetId = Array.isArray(target.entity_id) ? target.entity_id[0] : target.entity_id;
+
+      if (domain === "climate") {
+        if (service === "set_temperature" && typeof data.temperature === "number")
+          climate.target = clamp(data.temperature, 16, 30);
+        else if (service === "set_hvac_mode" && typeof data.hvac_mode === "string")
+          climate.mode = data.hvac_mode;
+        else if (service === "set_fan_mode" && typeof data.fan_mode === "string")
+          climate.fan = data.fan_mode;
+        publishClimate();
+      } else if (domain === "cover") {
+        const z = zones.find((x) => x.id === targetId);
+        if (z) {
+          if (service === "set_cover_position" && typeof data.position === "number")
+            z.position = clamp(Math.round(data.position), 0, 100);
+          else if (service === "open_cover") z.position = 100;
+          else if (service === "close_cover") z.position = 0;
+          publishZone(z);
+        }
+      }
+      return { called: `${domain}.${service}` };
+    });
+
+    ctx.registerAction("toggle", (params) => {
+      const id = String(params.entity_id ?? "");
+      if (id === "climate.living_room") {
+        climate.mode = climate.mode === "off" ? "cool" : "off";
+        publishClimate();
+      }
+      const z = zones.find((x) => x.id === id);
+      if (z) {
+        z.position = z.position > 0 ? 0 : 100;
+        publishZone(z);
+      }
+      return { toggled: id };
+    });
+
     ctx.logger.info(
-      "demo integration ready (streams: weather, energy, lights, calendar, now-playing)",
+      "demo integration ready (streams: weather, energy, lights, calendar, now-playing, climate)",
     );
     return {};
   },

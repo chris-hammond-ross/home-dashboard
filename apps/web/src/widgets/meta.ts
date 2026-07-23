@@ -223,6 +223,47 @@ export const widgetMeta: WidgetMeta[] = [
       },
     ],
   },
+  {
+    type: "climate-control",
+    label: "Climate control",
+    description: "Thermostat / AC — temperature, mode, fan, optional zone dampers",
+    defaultSpans: { cols: 2, rows: 4 },
+    defaultVariant: "radial",
+    variants: [
+      {
+        id: "radial",
+        label: "Radial",
+        description: "Drag-to-set dial with mode pills and a fan row",
+      },
+      {
+        id: "studio",
+        label: "Studio",
+        description: "Channel-strip fader, mode list and LED fan meter",
+      },
+      {
+        id: "bento",
+        label: "Bento",
+        description: "Glassy tile grid: setpoint, mode, fan and indoor now",
+      },
+    ],
+    fields: [
+      {
+        key: "entity",
+        label: "Climate entity",
+        kind: "entity",
+        domains: ["climate"],
+        help: "The thermostat or AC unit to control.",
+      },
+      { key: "label", label: "Label", kind: "text", placeholder: "HA friendly name" },
+      {
+        key: "zoneEntities",
+        label: "Zones (dampers)",
+        kind: "entity-list",
+        domains: ["cover", "fan", "climate"],
+        help: "Optional ducted-zone dampers (AirTouch / Advantage Air). Covers use position %, fans use speed %, climate zones toggle on/off.",
+      },
+    ],
+  },
 ];
 
 export const widgetMetaByType: Record<string, WidgetMeta> = Object.fromEntries(

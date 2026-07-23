@@ -1,0 +1,925 @@
+/*
+ * Climate control widget — three interchangeable looks (Radial, Studio, Bento),
+ * ported from temp/climate-control-prototypes.jsx. Like the weather widget, this
+ * family owns its own vivid palette (mode gradients + glows are set inline from
+ * the derived view); the shared shell is dark-first to match the wall panel.
+ *
+ * Every variant is full-bleed inside its grid cell (no WidgetCard chrome) so the
+ * card background reaches the edges. Recommended span: cols 2, rows 4.
+ */
+
+.cc-root {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  container-type: size;
+  color: #fff;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cc-card {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-card);
+  background: #121214;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+/* ── empty / waiting ─────────────────────────────────────────────────────────── */
+.cc-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #121214;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.cc-empty-inner {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px;
+}
+.cc-empty-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.cc-empty-msg {
+  font-size: 13px;
+}
+
+/* ── control bar (SegmentedControl + power) ──────────────────────────────────── */
+.cc-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.cc-bar-spacer {
+  flex: 1;
+}
+
+/* ── power button ────────────────────────────────────────────────────────────── */
+.cc-power {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.2s;
+}
+.cc-power.is-on {
+  color: #0d0d0f;
+  background: #fff;
+  border-color: transparent;
+}
+.cc-power:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Mantine SegmentedControl (Controls / Zones), tinted to the mode ─────────── */
+.cc-seg-root {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.cc-seg-label {
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 600;
+}
+.cc-seg-label[data-active],
+.cc-seg-ctrl[data-active] .cc-seg-label {
+  color: #0d0d0f;
+}
+
+/* ── round / square steppers ─────────────────────────────────────────────────── */
+.cc-round {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cc-sq {
+  width: 38px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.cc-round:disabled,
+.cc-sq:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── radial dial ─────────────────────────────────────────────────────────────── */
+.cc-dial {
+  position: relative;
+  touch-action: none;
+}
+.cc-dial svg {
+  cursor: grab;
+  display: block;
+  outline: none;
+}
+.cc-dial-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.cc-dial-mode {
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.cc-dial-temp {
+  display: flex;
+  align-items: flex-start;
+  color: #fff;
+  line-height: 1;
+  margin-top: 4px;
+}
+.cc-dial-int {
+  font-size: 66px;
+  font-weight: 200;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+}
+.cc-dial-side {
+  display: flex;
+  flex-direction: column;
+  margin-top: 9px;
+  margin-left: 2px;
+}
+.cc-dial-unit {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+.cc-dial-dec {
+  font-size: 22px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.85);
+}
+.cc-dial-ambient {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.cc-dial-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cc-dial-btns {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 44px;
+}
+.cc-section {
+  flex-shrink: 0;
+}
+
+/* ── mode pills / grid / list ────────────────────────────────────────────────── */
+.cc-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cc-pill {
+  flex: 1 1 auto;
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 8px;
+  border-radius: 13px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.25s;
+}
+.cc-pill.is-active {
+  color: #0d0d0f;
+  border-color: transparent;
+}
+.cc-modegrid {
+  display: flex;
+  gap: 6px;
+}
+.cc-modegrid-btn {
+  flex: 1;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s;
+}
+.cc-modegrid-btn.is-active {
+  color: #0d0d0f;
+  border-color: transparent;
+}
+.cc-modelist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cc-modelist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+.cc-modelist-item.is-active {
+  color: #0d0d0f;
+  border-color: transparent;
+}
+
+/* ── fan controls ────────────────────────────────────────────────────────────── */
+.cc-fan-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cc-fan-btn {
+  flex: 1 1 auto;
+  min-width: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s;
+}
+.cc-fan-btn.is-active {
+  color: #0d0d0f;
+  border-color: transparent;
+}
+.cc-fanchips {
+  display: flex;
+  gap: 5px;
+}
+.cc-fanchip {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+}
+.cc-fanchip.is-active {
+  color: #0d0d0f;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* LED fan meter (Studio) */
+.cc-led {
+  margin-top: 8px;
+}
+.cc-led-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cc-led-cell {
+  height: 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.15s;
+}
+.cc-led-auto {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s;
+}
+.cc-led-auto.is-active {
+  color: #0d0d0f;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: transparent;
+}
+
+/* ── vertical fader ──────────────────────────────────────────────────────────── */
+.cc-fader {
+  position: relative;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.cc-fader.is-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cc-fader-tick {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.cc-fader-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.cc-fader-knob {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #fff;
+}
+
+/* ── horizontal slider (zone damper) ─────────────────────────────────────────── */
+.cc-hslider {
+  position: relative;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+.cc-hslider.is-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cc-hslider-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.cc-hslider-fill {
+  position: absolute;
+  left: 0;
+  height: 8px;
+  border-radius: 8px;
+}
+.cc-hslider-knob {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* ── progress ring (zone damper) ─────────────────────────────────────────────── */
+.cc-ring {
+  position: relative;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.cc-ring.is-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cc-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cc-ring-label span {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* ── mini control bar ────────────────────────────────────────────────────────── */
+.cc-mini {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+.cc-mini.is-glassy {
+  background: rgba(255, 255, 255, 0.045);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.cc-mini-mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  min-width: 0;
+}
+.cc-mini-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0d0d0f;
+  flex-shrink: 0;
+}
+.cc-mini-label {
+  color: #fff;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cc-mini-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.cc-mini-temp {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+.cc-mini-unit {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 1px;
+}
+
+/* ── zone slider rows (Radial) ───────────────────────────────────────────────── */
+.cc-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.cc-zone-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+}
+.cc-zone-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.cc-zone-main {
+  flex: 1;
+  min-width: 0;
+}
+.cc-zone-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.cc-zone-name {
+  color: #fff;
+  font-size: 14px;
+}
+.cc-zone-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── mixer channels (Studio) ─────────────────────────────────────────────────── */
+.cc-mixer {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  min-height: 0;
+}
+.cc-channel {
+  flex: 0 0 auto;
+  width: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.cc-channel-val {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cc-channel-val.is-muted {
+  color: rgba(255, 255, 255, 0.35);
+}
+.cc-channel-nolevel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  color: rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+.cc-channel-btn {
+  width: 100%;
+  padding: 6px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cc-channel-name {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cc-channel-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 2px;
+  align-self: stretch;
+}
+
+/* ── Studio body ─────────────────────────────────────────────────────────────── */
+.cc-studio-body {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+.cc-studio-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.cc-studio-readout {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.cc-studio-readout span {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 2px;
+}
+.cc-studio-current {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: -4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-variant-numeric: tabular-nums;
+}
+.cc-studio-steppers {
+  display: flex;
+  gap: 8px;
+}
+.cc-studio-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.cc-lbl {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ── Bento ───────────────────────────────────────────────────────────────────── */
+.cc-bento-grid,
+.cc-bento-stack {
+  position: relative;
+  z-index: 1;
+}
+.cc-bento-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+.cc-bento-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+.cc-tile {
+  position: relative;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  padding: 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.cc-tile-wide {
+  grid-column: 1 / -1;
+}
+.cc-tile-label {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.cc-hero {
+  padding: 20px;
+}
+.cc-hero-main {
+  display: inline-block;
+}
+.cc-hero-mode {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.cc-hero-temp {
+  display: flex;
+  align-items: flex-start;
+  color: #fff;
+  line-height: 0.9;
+}
+.cc-hero-int {
+  font-size: 60px;
+  font-weight: 600;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+}
+.cc-hero-side {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  margin-left: 3px;
+}
+.cc-hero-unit {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.cc-hero-dec {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.cc-hero-btns {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cc-hero-bar {
+  margin-top: 16px;
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+.cc-hero-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 6px;
+  transition: width 0.3s;
+}
+.cc-indoor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+.cc-indoor-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+.cc-indoor-val {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cc-ztile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.cc-ztile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.cc-ztile-onoff {
+  width: 104px;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.35);
+}
+.cc-ztile-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+.cc-ztile-name {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cc-ztile-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── shared scroll styling ───────────────────────────────────────────────────── */
+.cc-scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.cc-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+/* ── motion ──────────────────────────────────────────────────────────────────── */
+.cc-spin {
+  animation: cc-spin linear infinite;
+}
+@keyframes cc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cc-drift {
+  0% {
+    transform: translate(-6%, -4%) scale(1);
+  }
+  50% {
+    transform: translate(8%, 7%) scale(1.14);
+  }
+  100% {
+    transform: translate(-6%, -4%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-root *,
+  .cc-root *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

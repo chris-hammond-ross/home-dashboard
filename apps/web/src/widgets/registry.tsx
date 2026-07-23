@@ -13,6 +13,9 @@ import { NowPlayingWidget } from "./NowPlayingWidget.js";
 import { EntityToggleWidget } from "./EntityToggleWidget.js";
 import { NodeMapVariant } from "./power-flow/NodeMapVariant.js";
 import { SwitchboardVariant } from "./power-flow/SwitchboardVariant.js";
+import { RadialVariant } from "./climate/RadialVariant.js";
+import { StudioVariant } from "./climate/StudioVariant.js";
+import { BentoVariant } from "./climate/BentoVariant.js";
 
 export interface WidgetRenderProps {
   config: WidgetConfig;
@@ -49,6 +52,10 @@ const registry: Record<string, RegistryEntry> = {
   "home-power-flow": {
     defaultVariant: "node-map",
     variants: { "node-map": NodeMapVariant, switchboard: SwitchboardVariant },
+  },
+  "climate-control": {
+    defaultVariant: "radial",
+    variants: { radial: RadialVariant, studio: StudioVariant, bento: BentoVariant },
   },
 };
 
