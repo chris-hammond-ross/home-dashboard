@@ -127,7 +127,11 @@ export function PowerButton({
       aria-pressed={on}
       disabled={disabled}
       onClick={onClick}
-      style={on && accent ? { background: accent, borderColor: "transparent", color: "#0d0d0f" } : undefined}
+      style={
+        on && accent
+          ? { background: accent, borderColor: "transparent", color: "#0d0d0f" }
+          : undefined
+      }
     >
       <ClimateGlyph icon="power" size={18} />
     </button>
@@ -733,7 +737,11 @@ export function FanRow({
             style={active ? { background: accent, boxShadow: `0 6px 16px ${accent}59` } : undefined}
           >
             {showIcon ? (
-              running ? <SpinningFan size={20} /> : <ClimateGlyph icon="fan" size={20} />
+              running ? (
+                <SpinningFan size={20} />
+              ) : (
+                <ClimateGlyph icon="fan" size={20} />
+              )
             ) : null}
             {fanLabel(f)}
           </button>

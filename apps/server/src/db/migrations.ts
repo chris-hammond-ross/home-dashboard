@@ -35,6 +35,23 @@ const migrations: Migration[] = [
       `);
     },
   },
+  {
+    id: 2,
+    name: "tariffs",
+    up(db) {
+      db.exec(`
+        CREATE TABLE tariffs (
+          id         TEXT PRIMARY KEY,
+          name       TEXT NOT NULL,
+          is_active  INTEGER NOT NULL DEFAULT 0,
+          position   INTEGER NOT NULL,
+          config     TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+          updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+        );
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

@@ -1,23 +1,5 @@
-import type { FrontendBootstrap, ScreenConfig } from "@home-dashboard/shared";
-
-/** Thin fetch helpers for the screens REST API; non-2xx throws the server's error text. */
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: init?.body ? { "content-type": "application/json" } : undefined,
-  });
-  if (!res.ok) {
-    let message = `HTTP ${res.status}`;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body.error) message = body.error;
-    } catch {
-      /* non-JSON error body */
-    }
-    throw new Error(message);
-  }
-  return (await res.json()) as T;
-}
+import type { FrontendBootstrap, ScreenConfig, Tariff } from "@home-dashboard/shared";
+import { request } from "../lib/http.js";
 
 export const fetchBootstrap = (): Promise<FrontendBootstrap> =>
   request<FrontendBootstrap>("/api/screens");
@@ -39,3 +21,59 @@ export const reorderScreens = (ids: string[]): Promise<{ ok: boolean }> =>
 
 export const setDefaultScreen = (id: string): Promise<{ ok: boolean }> =>
   request<{ ok: boolean }>(`/api/screens/${id}/default`, { method: "POST" });
+
+// --- tariffs ---------------------------------------------------------------
+
+export interface StoredTariff extends Tariff {
+  active: boolean;
+}
+
+export const fetchTariffs = (): Promise<{ tariffs: StoredTariff[] }> =>
+  request<{ tariffs: StoredTariff[] }>("/api/tariffs");
+
+export const createTariff = (body: Omit<Tariff, "id"> & { id?: string }): Promise<StoredTariff> =>
+  request<StoredTariff>("/api/tariffs", { method: "POST", body: JSON.stringify(body) });
+
+export const updateTariff = (id: string, body: Omit<Tariff, "id">): Promise<StoredTariff> =>
+  request<StoredTariff>(`/api/tariffs/${id}`, { method: "PUT", body: JSON.stringify(body) });
+
+export const deleteTariff = (id: string): Promise<{ ok: boolean }> =>
+  request<{ ok: boolean }>(`/api/tariffs/${id}`, { method: "DELETE" });
+
+export const setActiveTariff = (id: string): Promise<{ ok: boolean }> =>
+  request<{ ok: boolean }>(`/api/tariffs/${id}/active`, { method: "POST" });
+
+// --- retailer plan import (Consumer Data Right, proxied by the server) ------
+
+export interface Retailer {
+  id: string;
+  name: string;
+  logoUri?: string;
+}
+
+export interface PlanSummary {
+  planId: string;
+  displayName: string;
+  type: string;
+  distributors: string[];
+}
+
+export const fetchRetailers = (): Promise<{ retailers: Retailer[] }> =>
+  request<{ retailers: Retailer[] }>("/api/tariffs/retailers");
+
+export const fetchPlans = (
+  retailer: string,
+  postcode?: string,
+): Promise<{ plans: PlanSummary[] }> => {
+  const params = new URLSearchParams({ retailer });
+  if (postcode) params.set("postcode", postcode);
+  return request<{ plans: PlanSummary[] }>(`/api/tariffs/plans?${params.toString()}`);
+};
+
+export const fetchPlanTariff = (
+  retailer: string,
+  planId: string,
+): Promise<{ tariff: Tariff; warnings: string[] }> =>
+  request<{ tariff: Tariff; warnings: string[] }>(
+    `/api/tariffs/plans/${retailer}/${encodeURIComponent(planId)}`,
+  );

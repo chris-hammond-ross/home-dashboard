@@ -134,6 +134,113 @@ export const demoIntegration = defineIntegration({
     publishEnergy();
     ctx.every(config.tickMs, publishEnergy);
 
+    // --- energy history (long-term statistics) --------------------------------
+    // Answers the SAME `statistics` / `list-statistic-ids` actions as the Home
+    // Assistant integration, so the power-flow drill-down and its cost figures
+    // can be developed and probed against `integration: demo` with no HA and no
+    // recorder. Deterministic: the value for a given hour never changes, so a
+    // probe can assert exact totals.
+    const DEMO_STATS: Record<string, { name: string; unit: string; unitClass: string }> = {
+      "sensor.demo_solar_energy": { name: "Demo solar energy", unit: "kWh", unitClass: "energy" },
+      "sensor.demo_grid_import": { name: "Demo grid import", unit: "kWh", unitClass: "energy" },
+      "sensor.demo_grid_export": { name: "Demo grid export", unit: "kWh", unitClass: "energy" },
+      "sensor.demo_battery_charge": {
+        name: "Demo battery charge",
+        unit: "kWh",
+        unitClass: "energy",
+      },
+      "sensor.demo_battery_discharge": {
+        name: "Demo battery discharge",
+        unit: "kWh",
+        unitClass: "energy",
+      },
+      "sensor.demo_home_energy": {
+        name: "Demo home consumption",
+        unit: "kWh",
+        unitClass: "energy",
+      },
+    };
+
+    /** Stable 0..1 hash of an hour — same input, same output, forever. */
+    const hourNoise = (hourMs: number, salt: number): number => {
+      const x = Math.sin(hourMs / 3_600_000 + salt * 97.13) * 43758.5453;
+      return x - Math.floor(x);
+    };
+
+    /** One hour of a plausible solar household, in kWh. */
+    const demoHour = (hourMs: number) => {
+      const date = new Date(hourMs);
+      const hour = date.getUTCHours();
+      const seasonal = 0.75 + 0.25 * Math.cos(((date.getUTCMonth() - 6) / 12) * 2 * Math.PI);
+      const x = (hour + 0.5 - 12.5) / 5.5;
+      const solar = Math.max(
+        0,
+        6.2 * Math.exp(-x * x * 3) * seasonal * (0.85 + 0.3 * hourNoise(hourMs, 1)),
+      );
+      // Morning and evening peaks over a ~0.35 kWh baseline.
+      const shape =
+        0.35 +
+        0.9 * Math.exp(-(((hour - 7.5) / 1.8) ** 2)) +
+        1.3 * Math.exp(-(((hour - 19) / 2.2) ** 2));
+      const home = shape * (0.85 + 0.3 * hourNoise(hourMs, 2));
+
+      const surplus = solar - home;
+      // Charge from surplus, discharge to cover the evening — capped like a
+      // real 5 kW inverter so the numbers stay believable.
+      const batteryCharge = surplus > 0 ? Math.min(surplus * 0.8, 2.5) : 0;
+      const batteryDischarge =
+        surplus < 0 && (hour >= 17 || hour < 1) ? Math.min(-surplus, 2.0) : 0;
+      const net = home + batteryCharge - solar - batteryDischarge;
+      return {
+        "sensor.demo_solar_energy": solar,
+        "sensor.demo_home_energy": home,
+        "sensor.demo_battery_charge": batteryCharge,
+        "sensor.demo_battery_discharge": batteryDischarge,
+        "sensor.demo_grid_import": Math.max(0, net),
+        "sensor.demo_grid_export": Math.max(0, -net),
+      } as Record<string, number>;
+    };
+
+    const HOUR_MS = 3_600_000;
+
+    ctx.registerAction("statistics", (params) => {
+      const statisticIds = Array.isArray(params.statisticIds)
+        ? params.statisticIds.filter((id): id is string => typeof id === "string")
+        : [];
+      const start = Date.parse(String(params.startTime ?? ""));
+      const end = params.endTime ? Date.parse(String(params.endTime)) : Date.now();
+      if (!Number.isFinite(start) || !Number.isFinite(end)) {
+        throw new Error("startTime and endTime must be ISO timestamps");
+      }
+      const wantsMean = Array.isArray(params.types) && params.types.includes("mean");
+
+      const out: Record<string, { start: number; change?: number; mean?: number }[]> = {};
+      for (const id of statisticIds) {
+        if (!(id in DEMO_STATS)) continue;
+        const points: { start: number; change?: number; mean?: number }[] = [];
+        for (let ms = Math.floor(start / HOUR_MS) * HOUR_MS; ms < end; ms += HOUR_MS) {
+          const kwh = demoHour(ms)[id] ?? 0;
+          // A kWh-per-hour figure is numerically watts/1000, so `mean` in W is
+          // just the same number scaled — exactly the relationship the server
+          // relies on when integrating a power sensor.
+          points.push(wantsMean ? { start: ms, mean: kwh * 1000 } : { start: ms, change: kwh });
+        }
+        out[id] = points;
+      }
+      return out;
+    });
+
+    ctx.registerAction("list-statistic-ids", () =>
+      Object.entries(DEMO_STATS).map(([id, meta]) => ({
+        id,
+        name: meta.name,
+        unit: meta.unit,
+        unitClass: meta.unitClass,
+        hasSum: true,
+        hasMean: false,
+      })),
+    );
+
     // --- calendar -----------------------------------------------------------
     const publishCalendar = () => {
       const now = Date.now();

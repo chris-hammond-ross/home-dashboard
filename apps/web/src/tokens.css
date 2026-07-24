@@ -27,13 +27,37 @@
   --status-serious: #ec835a;
   --status-critical: #d03b3b;
 
-  /* power-flow roles — one fixed color per role, each paired with its word */
+  /* power-flow roles — one fixed color per role, each paired with its word.
+     These sit on well-separated, individually labelled nodes in the diagram. */
   --flow-solar: #d6a155; /* generation  */
   --flow-grid: #5f8cc9; /* grid import */
   --flow-export: #4baf9b; /* export      */
   --flow-battery: #63b87b; /* discharge   */
   --flow-charge: #9683cf; /* charging    */
   --flow-idle: #39415a; /* inactive    */
+
+  /* Chart steps of the SAME hues, for stacked bars where the roles touch.
+     The --flow-* set is not usable stacked: solar↔battery is ΔE 4.6 under
+     protanopia and 14.9 even with normal vision, so adjacent segments would be
+     hard to tell apart. These are re-stepped into the dark-mode lightness band
+     and validated — every pair that can appear in one chart clears the CVD and
+     normal-vision floors. Same hue families, so solar still reads amber, grid
+     blue, battery green across both the diagram and the charts.
+     Never put --chart-charge and --chart-grid in the same chart: violet and
+     blue fail together, and they never co-occur (charge pairs with discharge). */
+  --chart-solar: #c48725;
+  --chart-battery: #1e763e; /* discharge */
+  --chart-grid: #5f8cc9;
+  --chart-export: #00785b;
+  --chart-charge: #8b6fd6;
+
+  /* Tariff bands are ORDERED (off-peak → shoulder → peak), so they get a
+     sequential ramp rather than categorical hues — and it is the grid hue,
+     because every one of those bars is grid import. Light = cheapest. */
+  --chart-band-1: #a7c0e1;
+  --chart-band-2: #7ba1d3;
+  --chart-band-3: #5082c4;
+  --chart-band-4: #215da8;
 
   --radius-card: 16px;
 }

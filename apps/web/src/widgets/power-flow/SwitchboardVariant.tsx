@@ -1,15 +1,18 @@
-import { useMemo, type CSSProperties, type ReactNode } from "react";
-import { Text } from "@mantine/core";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { Group, Text } from "@mantine/core";
 import { formatWatts } from "../../lib/format.js";
 import { WidgetCard, type WidgetRenderProps } from "../registry.js";
 import {
   deriveFlows,
+  formatSpendRate,
   FLOW_COLOR,
+  useLiveCost,
   usePowerFlow,
   type FlowKind,
   type NodeId,
   type PowerFlowView,
 } from "./model.js";
+import { EnergyDetailModal } from "./EnergyDetailModal.js";
 import "./power-flow.css";
 
 const EPS = 1;
@@ -59,6 +62,7 @@ function SourceCard({
   chip,
   kind,
   active,
+  onOpen,
   children,
 }: {
   icon: ReactNode;
@@ -67,11 +71,29 @@ function SourceCard({
   chip: string;
   kind: FlowKind | null;
   active: boolean;
+  /** Present when history is available — turns the card into a button. */
+  onOpen?: () => void;
   children?: ReactNode;
 }) {
   const color = kind ? FLOW_COLOR[kind] : undefined;
   return (
-    <div className="pf-card">
+    <div
+      className={onOpen ? "pf-card pf-tappable" : "pf-card"}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? `${name} history and cost` : undefined}
+      onClick={onOpen}
+      onKeyDown={
+        onOpen
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpen();
+              }
+            }
+          : undefined
+      }
+    >
       <div className="pf-cardhead">
         <span className="pf-cardicon">{icon}</span>
         <span className="pf-cardname">{name}</span>
@@ -158,6 +180,11 @@ function batteryLane(view: PowerFlowView): LaneOpts | null {
 export function SwitchboardVariant({ config }: WidgetRenderProps) {
   const view = usePowerFlow(config);
   const flows = useMemo(() => deriveFlows(view), [view]);
+  const cost = useLiveCost(view);
+  const [detail, setDetail] = useState<NodeId | null>(null);
+  const showCost = config.props.showCost !== false;
+  const history = config.props.history !== false;
+  const open = (id: NodeId) => (history ? () => setDetail(id) : undefined);
 
   const feeds = flows.filter((f) => f.to === "home");
   const dominant = feeds.slice().sort((a, b) => b.watts - a.watts)[0];
@@ -169,6 +196,16 @@ export function SwitchboardVariant({ config }: WidgetRenderProps) {
 
   return (
     <WidgetCard title={config.title ?? "Power flow"}>
+      {showCost && cost ? (
+        <Group gap={8} wrap="nowrap">
+          <Text size="sm" c="var(--text-secondary)">
+            {cost.bandLabel} {cost.centsPerKwh.toFixed(1)}c
+          </Text>
+          <Text size="sm" c="var(--text-primary)" className="pf-val">
+            {formatSpendRate(cost.centsPerHour)}
+          </Text>
+        </Group>
+      ) : null}
       {!view.configured ? (
         <Text c="var(--text-muted)">Add sensor entities in settings to see power flow.</Text>
       ) : view.waiting ? (
@@ -186,6 +223,7 @@ export function SwitchboardVariant({ config }: WidgetRenderProps) {
                     chip={view.solarW > EPS ? "Generating" : "Offline"}
                     kind={view.solarW > EPS ? "solar" : null}
                     active={view.solarW > EPS}
+                    onOpen={open("solar")}
                   />
                   <Lane opts={solarLane(view)} />
                 </div>
@@ -199,6 +237,7 @@ export function SwitchboardVariant({ config }: WidgetRenderProps) {
                   chip={gExport ? "Exporting" : view.gridImportW > EPS ? "Importing" : "Standby"}
                   kind={gExport ? "export" : view.gridImportW > EPS ? "grid" : null}
                   active={gExport || view.gridImportW > EPS}
+                  onOpen={open("grid")}
                 />
                 <Lane opts={gridLane(view)} />
               </div>
@@ -214,6 +253,7 @@ export function SwitchboardVariant({ config }: WidgetRenderProps) {
                     }
                     kind={bCharge ? "charge" : view.batteryDischargeW > EPS ? "battery" : null}
                     active={bCharge || view.batteryDischargeW > EPS}
+                    onOpen={open("battery")}
                   >
                     {view.socPct != null ? (
                       <div className="pf-socwrap">
@@ -240,7 +280,23 @@ export function SwitchboardVariant({ config }: WidgetRenderProps) {
               <Lane opts={homeLane} />
             </div>
 
-            <div className="pf-home">
+            <div
+              className={history ? "pf-home pf-tappable" : "pf-home"}
+              role={history ? "button" : undefined}
+              tabIndex={history ? 0 : undefined}
+              aria-label={history ? "Home consumption history and cost" : undefined}
+              onClick={open("home")}
+              onKeyDown={
+                history
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setDetail("home");
+                      }
+                    }
+                  : undefined
+              }
+            >
               <div className="pf-cardhead">
                 <span className="pf-cardicon pf-home-icon">
                   <HomeIcon />
@@ -287,6 +343,9 @@ export function SwitchboardVariant({ config }: WidgetRenderProps) {
           </div>
         </div>
       )}
+      {detail ? (
+        <EnergyDetailModal node={detail} config={config} opened onClose={() => setDetail(null)} />
+      ) : null}
     </WidgetCard>
   );
 }

@@ -7,10 +7,16 @@ import fastifyStatic from "@fastify/static";
 import { findConfigPath, loadConfig } from "./config.js";
 import { openDatabase, resolveDbPath } from "./db/index.js";
 import { ScreenStore } from "./db/screen-store.js";
+import { TariffStore } from "./db/tariff-store.js";
 import { ScreenService } from "./screens.js";
+import { TariffService } from "./tariffs.js";
+import { AerClient } from "./aer.js";
+import { EnergyService } from "./energy.js";
 import { TopicHub } from "./hub.js";
 import { PluginHost } from "./plugins.js";
 import { registerScreenRoutes } from "./routes/screens.js";
+import { registerTariffRoutes } from "./routes/tariffs.js";
+import { registerEnergyRoutes } from "./routes/energy.js";
 import { registerWs } from "./ws.js";
 import { makeLogger } from "./log.js";
 
@@ -38,6 +44,11 @@ async function main(): Promise<void> {
   const screens = new ScreenService(store, hub, pluginHost);
   screens.broadcast();
 
+  const tariffs = new TariffService(new TariffStore(db), hub);
+  tariffs.broadcast(); // retains core/tariff from boot, and arms the band timer
+  const aer = new AerClient(makeLogger("aer"));
+  const energy = new EnergyService(pluginHost, tariffs);
+
   const app = Fastify({ logger: false });
   await app.register(websocket);
 
@@ -47,6 +58,8 @@ async function main(): Promise<void> {
     uptimeSec: Math.round(process.uptime()),
   }));
   registerScreenRoutes(app, screens, config.ambient);
+  registerTariffRoutes(app, tariffs, aer);
+  registerEnergyRoutes(app, energy);
 
   registerWs(app, hub, pluginHost, VERSION);
 
@@ -69,6 +82,7 @@ async function main(): Promise<void> {
 
   const shutdown = async (): Promise<void> => {
     log.info("shutting down");
+    tariffs.dispose();
     await pluginHost.dispose();
     await app.close();
     db.close();

@@ -7,11 +7,17 @@
  * where power is flowing. The prototypes faked this per-scenario; here it is
  * derived from live watt readings.
  */
-import type { WidgetConfig } from "@home-dashboard/shared";
+import {
+  allocateFlows,
+  type FlowKind,
+  type TariffState,
+  type WidgetConfig,
+} from "@home-dashboard/shared";
+import { useTopic } from "../../lib/socket.js";
 import { useEntityMap, type EntityPayload } from "../lights/shared.js";
 
 export type NodeId = "solar" | "grid" | "home" | "battery";
-export type FlowKind = "solar" | "grid" | "export" | "battery" | "charge";
+export type { FlowKind };
 
 /** Fixed categorical color per flow role (see tokens.css `--flow-*`). */
 export const FLOW_COLOR: Record<FlowKind, string> = {
@@ -169,59 +175,65 @@ export function usePowerFlow(config: WidgetConfig): PowerFlowView {
 }
 
 /**
- * Greedy power-balance allocation → the six directed flows the visuals draw.
- * Priority: solar serves home, then charges the battery, then exports; any
- * remaining home demand is met by battery discharge, then grid import; leftover
- * grid import can charge the battery (off-peak). Deterministic, and reproduces
- * every prototype scenario from raw sensor values.
+ * The six directed flows the visuals draw. The allocation itself lives in
+ * `@home-dashboard/shared` so the history service splits each past hour by the
+ * same priority the live diagram shows; this wrapper just re-labels `amount`
+ * as `watts` for the variants.
  */
 export function deriveFlows(view: PowerFlowView): FlowSegment[] {
-  let solar = view.solarW;
-  let batteryDischarge = view.batteryDischargeW;
-  let gridImport = view.gridImportW;
-  let home = view.loadW;
-  let batteryCharge = view.batteryChargeW;
-  let gridExport = view.gridExportW;
-
-  const flows: FlowSegment[] = [];
-  const push = (from: NodeId, to: NodeId, watts: number, kind: FlowKind) => {
-    if (watts > MIN_FLOW) flows.push({ from, to, watts, kind });
-  };
-
-  let x = Math.min(solar, home);
-  push("solar", "home", x, "solar");
-  solar -= x;
-  home -= x;
-
-  x = Math.min(solar, batteryCharge);
-  push("solar", "battery", x, "charge");
-  solar -= x;
-  batteryCharge -= x;
-
-  x = Math.min(solar, gridExport);
-  push("solar", "grid", x, "export");
-  solar -= x;
-  gridExport -= x;
-
-  x = Math.min(batteryDischarge, home);
-  push("battery", "home", x, "battery");
-  batteryDischarge -= x;
-  home -= x;
-
-  x = Math.min(gridImport, home);
-  push("grid", "home", x, "grid");
-  gridImport -= x;
-  home -= x;
-
-  x = Math.min(gridImport, batteryCharge);
-  push("grid", "battery", x, "charge");
-  gridImport -= x;
-  batteryCharge -= x;
-
-  return flows;
+  return allocateFlows(
+    {
+      solar: view.solarW,
+      gridImport: view.gridImportW,
+      gridExport: view.gridExportW,
+      batteryCharge: view.batteryChargeW,
+      batteryDischarge: view.batteryDischargeW,
+      load: view.loadW,
+    },
+    MIN_FLOW,
+  ).map((flow) => ({
+    from: flow.from as NodeId,
+    to: flow.to as NodeId,
+    watts: flow.amount,
+    kind: flow.kind,
+  }));
 }
 
 /** Stable signature of a flow set — cheap dependency for animation effects. */
 export function flowSignature(flows: FlowSegment[]): string {
   return flows.map((f) => `${f.from}-${f.to}:${f.kind}:${Math.round(f.watts)}`).join("|");
+}
+
+export interface LiveCost {
+  /** Import band in force right now, e.g. "Peak". */
+  bandLabel: string;
+  centsPerKwh: number;
+  /**
+   * What the house is spending this instant, in cents per hour: grid import at
+   * the current rate, less any export credit. Negative means earning.
+   */
+  centsPerHour: number;
+}
+
+/**
+ * Current spend rate from the retained `core/tariff` topic. The server owns the
+ * tariff and flips the band at each window boundary, so the widget only has to
+ * multiply. Returns null when no tariff is active or no band matches now.
+ */
+export function useLiveCost(view: PowerFlowView): LiveCost | null {
+  const state = useTopic<TariffState>("core/tariff");
+  if (!state?.tariff || !state.band) return null;
+  const importCents = (view.gridImportW / 1000) * state.band.centsPerKwh;
+  const exportCents = (view.gridExportW / 1000) * (state.exportCentsPerKwh ?? 0);
+  return {
+    bandLabel: state.band.label,
+    centsPerKwh: state.band.centsPerKwh,
+    centsPerHour: importCents - exportCents,
+  };
+}
+
+/** "$1.42/h" or "−$0.18/h" when exporting pays more than the house draws. */
+export function formatSpendRate(centsPerHour: number): string {
+  const sign = centsPerHour < 0 ? "−" : "";
+  return `${sign}$${(Math.abs(centsPerHour) / 100).toFixed(2)}/h`;
 }

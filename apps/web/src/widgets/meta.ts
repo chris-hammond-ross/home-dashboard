@@ -5,7 +5,7 @@
  */
 
 export type PropFieldKind =
-  "text" | "number" | "boolean" | "select" | "entity" | "entity-list" | "topic";
+  "text" | "number" | "boolean" | "select" | "entity" | "entity-list" | "statistic" | "topic";
 
 export interface PropField {
   key: string;
@@ -17,6 +17,8 @@ export interface PropField {
   domains?: string[];
   placeholder?: string;
   help?: string;
+  /** Group heading rendered above this field in the editor. */
+  section?: string;
 }
 
 /** One selectable visual variant of a widget type (see registry.tsx). */
@@ -221,6 +223,34 @@ export const widgetMeta: WidgetMeta[] = [
         domains: ["sensor"],
         help: "Optional — computed from the balance when omitted.",
       },
+      {
+        key: "history",
+        label: "Tap a node for history",
+        kind: "boolean",
+        section: "History & cost",
+        help: "Opens usage, totals and cost for the tapped node. On by default.",
+      },
+      {
+        key: "showCost",
+        label: "Show live cost on the widget",
+        kind: "boolean",
+        help: "Current tariff band and spend rate. Needs an active tariff in Settings → Energy tariff.",
+      },
+      {
+        key: "solarEnergyStat",
+        label: "Solar energy (kWh)",
+        kind: "statistic",
+        help: "Optional. Metered kWh gives exact history; without it the power sensor above is integrated and figures are marked estimated.",
+      },
+      { key: "gridImportEnergyStat", label: "Grid import energy (kWh)", kind: "statistic" },
+      { key: "gridExportEnergyStat", label: "Grid export energy (kWh)", kind: "statistic" },
+      { key: "batteryChargeEnergyStat", label: "Battery charge energy (kWh)", kind: "statistic" },
+      {
+        key: "batteryDischargeEnergyStat",
+        label: "Battery discharge energy (kWh)",
+        kind: "statistic",
+      },
+      { key: "homeEnergyStat", label: "Home consumption energy (kWh)", kind: "statistic" },
     ],
   },
   {

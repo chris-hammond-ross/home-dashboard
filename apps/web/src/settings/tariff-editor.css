@@ -1,0 +1,22 @@
+/* 24-hour band ribbon in the tariff editor (see TariffEditor.tsx). */
+
+.te-ribbon {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px; /* the same surface gap the charts use between segments */
+  height: 18px;
+}
+
+.te-ribbon-cell {
+  border-radius: 2px;
+}
+
+.te-ribbon-cell:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.te-ribbon-cell:last-child {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}

@@ -1,21 +1,26 @@
 import { useEffect, useState } from "react";
-import { Alert, Button, Card, Center, Flex, Group, Loader, Text, Title } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Group, Loader, Tabs, Text, Title } from "@mantine/core";
 import type { ScreenConfig } from "@home-dashboard/shared";
 import { socket, useTopic } from "../lib/socket.js";
+import { useHashRoute } from "../lib/useHashRoute.js";
 import { fetchBootstrap } from "./api.js";
 import { ScreenList } from "./ScreenList.js";
 import { ScreenEditor } from "./ScreenEditor.js";
+import { TariffEditor } from "./TariffEditor.js";
 
 /**
- * #/settings — screen & widget editor (desktop-first). Screens arrive over the
- * live core/screens topic; a one-shot REST fetch covers the moment before the
- * socket delivers the retained payload.
+ * #/settings — screen & widget editor, plus #/settings/tariff for the
+ * electricity plan (desktop-first). Screens arrive over the live core/screens
+ * topic; a one-shot REST fetch covers the moment before the socket delivers the
+ * retained payload.
  */
 export function SettingsScreen() {
   const [fetched, setFetched] = useState<ScreenConfig[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const live = useTopic<ScreenConfig[]>("core/screens");
+  const route = useHashRoute();
+  const tab = route.startsWith("#/settings/tariff") ? "tariff" : "screens";
 
   useEffect(() => {
     socket.start();
@@ -42,7 +47,7 @@ export function SettingsScreen() {
           <div>
             <Title order={2}>Settings</Title>
             <Text size="sm" c="var(--text-muted)">
-              Screens & widgets — changes go live on the dashboard as you save
+              Changes go live on the dashboard as you save
             </Text>
           </div>
           <Button component="a" href="#/" variant="default" size="sm">
@@ -50,35 +55,54 @@ export function SettingsScreen() {
           </Button>
         </Group>
 
-        {error ? (
-          <Alert color="red" variant="light" mb="md">
-            Failed to load screens: {error}
-          </Alert>
-        ) : null}
+        <Tabs
+          value={tab}
+          onChange={(value) => {
+            window.location.hash = value === "tariff" ? "#/settings/tariff" : "#/settings";
+          }}
+          mb="lg"
+        >
+          <Tabs.List>
+            <Tabs.Tab value="screens">Screens &amp; widgets</Tabs.Tab>
+            <Tabs.Tab value="tariff">Energy tariff</Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
 
-        {!screens && !error ? (
-          <Center h={240}>
-            <Loader />
-          </Center>
-        ) : null}
+        {tab === "tariff" ? <TariffEditor /> : null}
 
-        {screens ? (
-          <Flex gap="lg" align="flex-start" wrap="wrap">
-            <div style={{ width: 320, flexShrink: 0 }}>
-              <ScreenList screens={screens} selectedId={selectedId} onSelect={setSelectedId} />
-            </div>
-            <div style={{ flex: 1, minWidth: 360 }}>
-              {selected ? (
-                <ScreenEditor key={selected.id} screen={selected} />
-              ) : (
-                <Card>
-                  <Text size="sm" c="var(--text-muted)">
-                    Select a screen to edit, or create a new one.
-                  </Text>
-                </Card>
-              )}
-            </div>
-          </Flex>
+        {tab === "screens" ? (
+          <>
+            {error ? (
+              <Alert color="red" variant="light" mb="md">
+                Failed to load screens: {error}
+              </Alert>
+            ) : null}
+
+            {!screens && !error ? (
+              <Center h={240}>
+                <Loader />
+              </Center>
+            ) : null}
+
+            {screens ? (
+              <Flex gap="lg" align="flex-start" wrap="wrap">
+                <div style={{ width: 320, flexShrink: 0 }}>
+                  <ScreenList screens={screens} selectedId={selectedId} onSelect={setSelectedId} />
+                </div>
+                <div style={{ flex: 1, minWidth: 360 }}>
+                  {selected ? (
+                    <ScreenEditor key={selected.id} screen={selected} />
+                  ) : (
+                    <Card>
+                      <Text size="sm" c="var(--text-muted)">
+                        Select a screen to edit, or create a new one.
+                      </Text>
+                    </Card>
+                  )}
+                </div>
+              </Flex>
+            ) : null}
+          </>
         ) : null}
       </div>
     </div>

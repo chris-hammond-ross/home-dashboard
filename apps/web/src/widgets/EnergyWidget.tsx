@@ -1,36 +1,9 @@
-import type { ReactNode } from "react";
-import { SimpleGrid, Stack, Text } from "@mantine/core";
+import { SimpleGrid, Text } from "@mantine/core";
 import { useTopic } from "../lib/socket.js";
 import { formatWatts } from "../lib/format.js";
 import type { EnergyPayload } from "../lib/payloads.js";
 import { WidgetCard, type WidgetRenderProps } from "./registry.js";
-
-/**
- * KPI row of stat tiles (per the dataviz guidance: headline numbers are stat
- * tiles, not charts). Values wear ink; status color appears only on small
- * icon+label sub-lines.
- */
-function StatTile({ label, value, sub }: { label: string; value: string; sub?: ReactNode }) {
-  return (
-    <Stack gap={2}>
-      <Text size="xs" tt="uppercase" fw={600} lts="0.08em" c="var(--text-muted)">
-        {label}
-      </Text>
-      <Text fz={28} fw={600} lh={1.15} c="var(--text-primary)">
-        {value}
-      </Text>
-      {sub}
-    </Stack>
-  );
-}
-
-function SubLine({ color, children }: { color?: string; children: ReactNode }) {
-  return (
-    <Text size="sm" c={color ?? "var(--text-secondary)"}>
-      {children}
-    </Text>
-  );
-}
+import { StatTile, SubLine } from "./stat-tile.js";
 
 export function EnergyWidget({ config }: WidgetRenderProps) {
   const topic = typeof config.props.topic === "string" ? config.props.topic : "demo/energy";

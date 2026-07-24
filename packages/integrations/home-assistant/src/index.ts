@@ -27,6 +27,12 @@ import { z } from "zod";
  *   entity-hints  { entities: string[] }  — ids referenced by stored screens; published
  *                                           in addition to the allowlist (server calls this)
  *   list-entities { domain? }             — slim list of ALL entities (settings UI browser)
+ *
+ * History (read-only passthroughs to HA's recorder — the energy drill-down):
+ *   statistics        { statisticIds, startTime, endTime?, period, types?, units? }
+ *   list-statistic-ids { statisticType?, deviceClass? }
+ *   energy-prefs      {}   — HA's own Energy dashboard config, so the statistic ids
+ *                            it already knows about can be imported in one click
  */
 
 const HaConfigSchema = z.object({
@@ -53,6 +59,30 @@ const CallServiceParams = z.object({
     })
     .optional(),
 });
+
+const StatisticsParams = z.object({
+  statisticIds: z.array(z.string().min(1)).min(1),
+  startTime: z.string(),
+  endTime: z.string().optional(),
+  period: z.enum(["5minute", "hour", "day", "week", "month"]).default("hour"),
+  /**
+   * "change" gives the energy consumed within each bucket (the right answer for
+   * a total_increasing kWh meter); "mean" gives average power, which the server
+   * integrates when only a watt sensor exists.
+   */
+  types: z.array(z.enum(["change", "last_reset", "max", "mean", "min", "state", "sum"])).optional(),
+  /** Unit conversion by device class, e.g. { energy: "kWh" } or { power: "W" }. */
+  units: z.record(z.string(), z.string()).optional(),
+});
+
+/** One bucket as HA returns it; only the fields we consume are named. */
+interface HaStatisticPoint {
+  start: number | string;
+  change?: number | null;
+  mean?: number | null;
+  sum?: number | null;
+  state?: number | null;
+}
 
 function describeError(err: unknown): string {
   if (err === ERR_INVALID_AUTH) return "invalid auth — check your long-lived access token";
@@ -179,6 +209,72 @@ export const homeAssistantIntegration = defineIntegration({
       // Re-run with the new wanted set so newly-referenced entities publish now.
       if (Object.keys(lastEntities).length) onEntities(lastEntities);
       return { hinted: hinted.size };
+    });
+
+    /**
+     * Long-term statistics. HA keeps hourly statistics forever (only the
+     * 5-minute table is purged), so a year of history is always available —
+     * this is where the energy drill-down gets its numbers. Read-only.
+     */
+    ctx.registerAction("statistics", async (params) => {
+      const q = StatisticsParams.parse(params);
+      const result = await requireConnection().sendMessagePromise<
+        Record<string, HaStatisticPoint[]>
+      >({
+        type: "recorder/statistics_during_period",
+        statistic_ids: q.statisticIds,
+        start_time: q.startTime,
+        ...(q.endTime ? { end_time: q.endTime } : {}),
+        period: q.period,
+        ...(q.types ? { types: q.types } : {}),
+        ...(q.units ? { units: q.units } : {}),
+      });
+      return result ?? {};
+    });
+
+    ctx.registerAction("list-statistic-ids", async (params) => {
+      const statisticType =
+        params.statisticType === "sum" || params.statisticType === "mean"
+          ? params.statisticType
+          : undefined;
+      const result = await requireConnection().sendMessagePromise<
+        {
+          statistic_id: string;
+          name?: string | null;
+          display_unit_of_measurement?: string | null;
+          statistics_unit_of_measurement?: string | null;
+          unit_class?: string | null;
+          has_sum?: boolean;
+          has_mean?: boolean;
+        }[]
+      >({
+        type: "recorder/list_statistic_ids",
+        ...(statisticType ? { statistic_type: statisticType } : {}),
+      });
+      const deviceClass = typeof params.deviceClass === "string" ? params.deviceClass : undefined;
+      return (result ?? [])
+        .filter((s) => !deviceClass || s.unit_class === deviceClass)
+        .map((s) => ({
+          id: s.statistic_id,
+          name: s.name ?? lastEntities[s.statistic_id]?.attributes.friendly_name ?? s.statistic_id,
+          unit: s.display_unit_of_measurement ?? s.statistics_unit_of_measurement ?? "",
+          unitClass: s.unit_class ?? null,
+          hasSum: s.has_sum === true,
+          hasMean: s.has_mean === true,
+        }))
+        .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    });
+
+    /**
+     * HA's Energy dashboard already names the right kWh statistics for grid,
+     * solar and battery. Reading its prefs turns a six-field setup into one
+     * button. Read-only — we never call energy/save_prefs.
+     */
+    ctx.registerAction("energy-prefs", async () => {
+      const prefs = await requireConnection().sendMessagePromise<{
+        energy_sources?: Record<string, unknown>[];
+      }>({ type: "energy/get_prefs" });
+      return prefs ?? { energy_sources: [] };
     });
 
     ctx.registerAction("list-entities", (params) => {

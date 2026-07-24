@@ -326,3 +326,32 @@
     opacity: 0.28;
   }
 }
+
+/* Tappable nodes/cards — the energy drill-down (EnergyDetailModal). The whole
+   node is the hit target; the visible mark is unchanged so the diagram reads
+   exactly as before until you touch it. */
+.pf-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.pf-node:focus-visible circle:first-of-type {
+  stroke: var(--text-primary);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.pf-tappable {
+  cursor: pointer;
+  outline: none;
+  transition: background-color 120ms ease;
+}
+
+.pf-tappable:active {
+  background-color: rgb(255 255 255 / 4%);
+}
+
+.pf-tappable:focus-visible {
+  outline: 2px solid var(--text-secondary);
+  outline-offset: 2px;
+}

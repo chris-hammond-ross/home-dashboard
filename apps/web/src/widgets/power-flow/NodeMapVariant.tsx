@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Text } from "@mantine/core";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Group, Text } from "@mantine/core";
 import { formatWatts } from "../../lib/format.js";
 import { WidgetCard, type WidgetRenderProps } from "../registry.js";
 import {
   deriveFlows,
   flowSignature,
+  formatSpendRate,
   FLOW_COLOR,
+  useLiveCost,
   usePowerFlow,
   type FlowKind,
   type NodeId,
   type PowerFlowView,
 } from "./model.js";
+import { EnergyDetailModal } from "./EnergyDetailModal.js";
 import "./power-flow.css";
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -79,7 +82,7 @@ function nodeState(view: PowerFlowView, id: NodeId): NodeState {
   }
 }
 
-function Node({ id, view }: { id: NodeId; view: PowerFlowView }) {
+function Node({ id, view, onOpen }: { id: NodeId; view: PowerFlowView; onOpen?: () => void }) {
   const n = NODES[id];
   const st = nodeState(view, id);
   const isHome = id === "home";
@@ -88,7 +91,27 @@ function Node({ id, view }: { id: NodeId; view: PowerFlowView }) {
   const value = id === "solar" ? view.solarW : st.active ? st.watts : 0;
 
   return (
-    <g opacity={isHome || st.active ? 1 : 0.5}>
+    <g
+      opacity={isHome || st.active ? 1 : 0.5}
+      className={onOpen ? "pf-node" : undefined}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? `${n.label} history and cost` : undefined}
+      onClick={onOpen}
+      onKeyDown={
+        onOpen
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpen();
+              }
+            }
+          : undefined
+      }
+    >
+      {/* The visible circle is ~112px across, but a transparent disc makes the
+          whole node — icon, label, value, chip — one comfortable tap target. */}
+      {onOpen ? <circle cx={n.x} cy={n.y} r={n.r + 26} fill="transparent" /> : null}
       <circle
         cx={n.x}
         cy={n.y}
@@ -225,6 +248,10 @@ export function NodeMapVariant({ config }: WidgetRenderProps) {
   const view = usePowerFlow(config);
   const flows = useMemo(() => deriveFlows(view), [view]);
   const sig = flowSignature(flows);
+  const cost = useLiveCost(view);
+  const [detail, setDetail] = useState<NodeId | null>(null);
+  const showCost = config.props.showCost !== false;
+  const history = config.props.history !== false;
 
   const reduced = useMemo(
     () =>
@@ -308,6 +335,16 @@ export function NodeMapVariant({ config }: WidgetRenderProps) {
 
   return (
     <WidgetCard title={config.title ?? "Power flow"}>
+      {showCost && cost ? (
+        <Group gap={8} wrap="nowrap">
+          <Text size="sm" c="var(--text-secondary)">
+            {cost.bandLabel} {cost.centsPerKwh.toFixed(1)}c
+          </Text>
+          <Text size="sm" c="var(--text-primary)" className="pf-val">
+            {formatSpendRate(cost.centsPerHour)}
+          </Text>
+        </Group>
+      ) : null}
       {!view.configured ? (
         <Text c="var(--text-muted)">Add sensor entities in settings to see power flow.</Text>
       ) : view.waiting ? (
@@ -340,11 +377,19 @@ export function NodeMapVariant({ config }: WidgetRenderProps) {
             <g ref={particlesRef} />
             <Donut flows={flows} />
             {visible.map((id) => (
-              <Node key={id} id={id} view={view} />
+              <Node
+                key={id}
+                id={id}
+                view={view}
+                onOpen={history ? () => setDetail(id) : undefined}
+              />
             ))}
           </svg>
         </div>
       )}
+      {detail ? (
+        <EnergyDetailModal node={detail} config={config} opened onClose={() => setDetail(null)} />
+      ) : null}
     </WidgetCard>
   );
 }
