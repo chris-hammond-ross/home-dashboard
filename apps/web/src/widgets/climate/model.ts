@@ -13,6 +13,7 @@
  * State is always what HA says is true — dragging shows a local value only while
  * the pointer is down (service calls throttled), then settles back to the topic.
  */
+import { useEffect, useRef } from "react";
 import type { WidgetConfig } from "@home-dashboard/shared";
 import { socket } from "../../lib/socket.js";
 import { useEntityMap, type EntityPayload } from "../lights/shared.js";
@@ -343,6 +344,30 @@ function readZone(entity: string, p: EntityPayload | undefined): ZoneView {
   };
 }
 
+/* ── last-active-mode persistence ─────────────────────────────────────────────
+ * Powering a unit off collapses its HA state to "off", losing the mode. We keep
+ * the last active mode per entity so power-on restores it. localStorage lets it
+ * survive a kiosk reload; a throw (private mode / storage disabled) degrades to
+ * memory-only for the session. */
+
+const MODE_STORAGE_PREFIX = "hd.climate.lastMode.";
+
+function readStoredMode(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredMode(key: string, mode: string): void {
+  try {
+    window.localStorage.setItem(key, mode);
+  } catch {
+    /* storage unavailable — the in-memory ref still works for this session */
+  }
+}
+
 /* ── the hook ────────────────────────────────────────────────────────────────── */
 
 export interface Climate {
@@ -374,6 +399,23 @@ export function useClimate(config: WidgetConfig): Climate {
   const view = readView(entity, entity ? map[entity] : undefined);
   if (label) view.name = label;
   const zones = zoneIds.map((id) => readZone(id, map[id]));
+
+  // Remember the last active hvac_mode so powering back on restores it rather
+  // than snapping to modes[0] (usually "auto"). HA reports plain "off" when the
+  // unit is down — the previous mode is gone from the payload — so we snapshot
+  // it, mirrored to localStorage so it also survives a kiosk reload. The record
+  // effect fires for ANY source of a mode change (this UI, HA, the maker's own
+  // app), because view.mode just tracks the HA topic.
+  const storageKey = entity ? `${MODE_STORAGE_PREFIX}${entity}` : null;
+  const lastActiveMode = useRef<string | null>(null);
+  useEffect(() => {
+    lastActiveMode.current = storageKey ? readStoredMode(storageKey) : null;
+  }, [storageKey]);
+  useEffect(() => {
+    if (!view.on) return;
+    lastActiveMode.current = view.mode;
+    if (storageKey) writeStoredMode(storageKey, view.mode);
+  }, [view.on, view.mode, storageKey]);
 
   const call = (domain: string, service: string, data?: Record<string, unknown>, target?: string) =>
     void socket.action(integration, "call-service", {
@@ -413,8 +455,14 @@ export function useClimate(config: WidgetConfig): Climate {
 
   const togglePower = () => {
     if (!entity) return;
-    if (view.on) setMode("off");
-    else setMode(view.modes[0] ?? "heat");
+    if (view.on) {
+      setMode("off");
+    } else {
+      const remembered = lastActiveMode.current;
+      const restore =
+        remembered && view.modes.includes(remembered) ? remembered : (view.modes[0] ?? "heat");
+      setMode(restore);
+    }
   };
 
   const setZoneLevel = (zone: ZoneView, pct: number) => {
