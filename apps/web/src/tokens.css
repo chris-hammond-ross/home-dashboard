@@ -4,39 +4,39 @@
  * colors are the categorical slots in fixed order.
  */
 :root {
-  color-scheme: dark;
+	color-scheme: dark;
 
-  --page-plane: #0d0d0d;
-  --surface-1: #1a1a19;
+	--page-plane: #0d0d0d;
+	--surface-1: #1a1a19;
 
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #898781;
+	--text-primary: #ffffff;
+	--text-secondary: #c3c2b7;
+	--text-muted: #898781;
 
-  --hairline: rgba(255, 255, 255, 0.1);
+	--hairline: rgba(255, 255, 255, 0.1);
 
-  /* categorical slots (dark-surface steps, fixed order) */
-  --series-1: #3987e5; /* blue   */
-  --series-2: #008300; /* green  */
-  --series-3: #d55181; /* magenta */
-  --series-4: #c98500; /* yellow */
+	/* categorical slots (dark-surface steps, fixed order) */
+	--series-1: #3987e5; /* blue   */
+	--series-2: #008300; /* green  */
+	--series-3: #d55181; /* magenta */
+	--series-4: #c98500; /* yellow */
 
-  /* status — reserved, always paired with icon + label */
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-serious: #ec835a;
-  --status-critical: #d03b3b;
+	/* status — reserved, always paired with icon + label */
+	--status-good: #0ca30c;
+	--status-warning: #fab219;
+	--status-serious: #ec835a;
+	--status-critical: #d03b3b;
 
-  /* power-flow roles — one fixed color per role, each paired with its word.
+	/* power-flow roles — one fixed color per role, each paired with its word.
      These sit on well-separated, individually labelled nodes in the diagram. */
-  --flow-solar: #d6a155; /* generation  */
-  --flow-grid: #5f8cc9; /* grid import */
-  --flow-export: #4baf9b; /* export      */
-  --flow-battery: #63b87b; /* discharge   */
-  --flow-charge: #9683cf; /* charging    */
-  --flow-idle: #39415a; /* inactive    */
+	--flow-solar: #d6a155; /* generation  */
+	--flow-grid: #5f8cc9; /* grid import */
+	--flow-export: #4baf9b; /* export      */
+	--flow-battery: #63b87b; /* discharge   */
+	--flow-charge: #9683cf; /* charging    */
+	--flow-idle: #39415a; /* inactive    */
 
-  /* Chart steps of the SAME hues, for stacked bars where the roles touch.
+	/* Chart steps of the SAME hues, for stacked bars where the roles touch.
      The --flow-* set is not usable stacked: solar↔battery is ΔE 4.6 under
      protanopia and 14.9 even with normal vision, so adjacent segments would be
      hard to tell apart. These are re-stepped into the dark-mode lightness band
@@ -45,51 +45,51 @@
      blue, battery green across both the diagram and the charts.
      Never put --chart-charge and --chart-grid in the same chart: violet and
      blue fail together, and they never co-occur (charge pairs with discharge). */
-  --chart-solar: #c48725;
-  --chart-battery: #1e763e; /* discharge */
-  --chart-grid: #5f8cc9;
-  --chart-export: #00785b;
-  --chart-charge: #8b6fd6;
+	--chart-solar: #c48725;
+	--chart-battery: #1e763e; /* discharge */
+	--chart-grid: #5f8cc9;
+	--chart-export: #00785b;
+	--chart-charge: #8b6fd6;
 
-  /* Tariff bands are ORDERED (off-peak → shoulder → peak), so they get a
+	/* Tariff bands are ORDERED (off-peak → shoulder → peak), so they get a
      sequential ramp rather than categorical hues — and it is the grid hue,
      because every one of those bars is grid import. Light = cheapest. */
-  --chart-band-1: #a7c0e1;
-  --chart-band-2: #7ba1d3;
-  --chart-band-3: #5082c4;
-  --chart-band-4: #215da8;
+	--chart-band-1: #a7c0e1;
+	--chart-band-2: #7ba1d3;
+	--chart-band-3: #5082c4;
+	--chart-band-4: #215da8;
 
-  --radius-card: 16px;
+	--radius-card: 16px;
 }
 
 * {
-  -webkit-tap-highlight-color: transparent;
+	-webkit-tap-highlight-color: transparent;
 }
 
 html,
 body,
 #root {
-  height: 100%;
+	height: 100%;
 }
 
 @keyframes hd-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 body {
-  margin: 0;
-  background: var(--page-plane);
-  color: var(--text-primary);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
-  overflow: hidden; /* the wall panel never scrolls; screens paginate */
-  user-select: none;
+	margin: 0;
+	background: var(--page-plane);
+	color: var(--text-primary);
+	font-family:
+		system-ui,
+		-apple-system,
+		"Segoe UI",
+		sans-serif;
+	overflow: hidden; /* the wall panel never scrolls; screens paginate */
+	user-select: none;
 }

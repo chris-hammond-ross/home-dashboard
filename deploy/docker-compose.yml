@@ -4,12 +4,12 @@
 # without it the baked-in demo config is used.
 
 services:
-  dashboard:
-    build: ..
-    ports:
-      - "8090:8090"
-    volumes:
-      - ../config:/config:ro
-    environment:
-      - DASHBOARD_CONFIG=${DASHBOARD_CONFIG:-/config/example.yaml}
-    restart: unless-stopped
+    dashboard:
+        build: ..
+        ports:
+            - "8090:8090"
+        volumes:
+            - ../config:/config:ro
+        environment:
+            - DASHBOARD_CONFIG=${DASHBOARD_CONFIG:-/config/example.yaml}
+        restart: unless-stopped

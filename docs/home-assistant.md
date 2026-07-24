@@ -43,9 +43,9 @@ So yes — you can absolutely interrogate it to see everything available. Three 
 2. **From this repo**: `pnpm ha:explore` — lists every entity grouped by domain, with
    friendly names and current states (`pnpm ha:explore --domain light` to filter).
 3. **Raw REST**, if you're curious:
-   ```sh
-   curl -H "Authorization: Bearer $HA_TOKEN" http://homeassistant.local:8123/api/states
-   ```
+    ```sh
+    curl -H "Authorization: Bearer $HA_TOKEN" http://homeassistant.local:8123/api/states
+    ```
 
 Tokens last 10 years and can be revoked any time from the same Security tab. Treat it
 like a password: it's full control of your home. For least privilege you can create a
@@ -66,17 +66,17 @@ HA_TOKEN=eyJhbGciOiJIUzI1NiIs...
 ```yaml
 # config/local.yaml
 integrations:
-  - id: ha
-    kind: home-assistant
-    config:
-      # This IS the default — omit it if homeassistant.local works for you.
-      # Use the IP (e.g. http://192.168.1.50:8123) for Docker or flaky mDNS.
-      url: http://homeassistant.local:8123
-      token: ${HA_TOKEN}
-      # Only these entities are published to the dashboard. Omit `entities`
-      # entirely to publish everything (fine on a LAN, just chattier).
-      entities:
-        - light.study_lamp
+    - id: ha
+      kind: home-assistant
+      config:
+          # This IS the default — omit it if homeassistant.local works for you.
+          # Use the IP (e.g. http://192.168.1.50:8123) for Docker or flaky mDNS.
+          url: http://homeassistant.local:8123
+          token: ${HA_TOKEN}
+          # Only these entities are published to the dashboard. Omit `entities`
+          # entirely to publish everything (fine on a LAN, just chattier).
+          entities:
+              - light.study_lamp
 ```
 
 Notes:
@@ -96,18 +96,18 @@ Still in `config/local.yaml`, put an `entity-toggle` widget on a screen:
 
 ```yaml
 screens:
-  - id: home
-    name: Home
-    default: true
-    columns: 4
-    widgets:
-      - type: entity-toggle
-        title: Study
-        cols: 2
-        props:
-          entity: light.study_lamp
-          # integration: ha        # only needed if your integration id isn't "ha"
-          # label: Desk lamp       # overrides HA's friendly_name
+    - id: home
+      name: Home
+      default: true
+      columns: 4
+      widgets:
+          - type: entity-toggle
+            title: Study
+            cols: 2
+            props:
+                entity: light.study_lamp
+                # integration: ha        # only needed if your integration id isn't "ha"
+                # label: Desk lamp       # overrides HA's friendly_name
 ```
 
 ## 4. Run it and prove two-way state

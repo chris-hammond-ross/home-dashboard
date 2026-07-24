@@ -12,22 +12,22 @@ import type { ScreenStore } from "./db/screen-store.js";
  * publish entities beyond their allowlist.
  */
 export function extractEntityIds(screens: ScreenConfig[]): string[] {
-  const ids = new Set<string>();
-  const addString = (v: unknown) => {
-    if (typeof v === "string" && v) ids.add(v);
-  };
-  const addArray = (v: unknown) => {
-    if (Array.isArray(v)) for (const id of v) addString(id);
-  };
-  for (const screen of screens) {
-    for (const widget of screen.widgets) {
-      for (const [key, value] of Object.entries(widget.props)) {
-        if (key === "entity" || /Entity$/.test(key)) addString(value);
-        if (key === "entities" || /Entities$/.test(key)) addArray(value);
-      }
-    }
-  }
-  return [...ids].sort();
+	const ids = new Set<string>();
+	const addString = (v: unknown) => {
+		if (typeof v === "string" && v) ids.add(v);
+	};
+	const addArray = (v: unknown) => {
+		if (Array.isArray(v)) for (const id of v) addString(id);
+	};
+	for (const screen of screens) {
+		for (const widget of screen.widgets) {
+			for (const [key, value] of Object.entries(widget.props)) {
+				if (key === "entity" || /Entity$/.test(key)) addString(value);
+				if (key === "entities" || /Entities$/.test(key)) addArray(value);
+			}
+		}
+	}
+	return [...ids].sort();
 }
 
 /**
@@ -37,63 +37,63 @@ export function extractEntityIds(screens: ScreenConfig[]): string[] {
  * entities the screens now reference.
  */
 export class ScreenService {
-  constructor(
-    private store: ScreenStore,
-    private hub: TopicHub,
-    private plugins: PluginHost,
-  ) {}
+	constructor(
+		private store: ScreenStore,
+		private hub: TopicHub,
+		private plugins: PluginHost,
+	) {}
 
-  list(): ScreenConfig[] {
-    return this.store.list();
-  }
+	list(): ScreenConfig[] {
+		return this.store.list();
+	}
 
-  create(input: ScreenConfig): ScreenConfig {
-    const created = this.store.create(input);
-    this.broadcast();
-    return created;
-  }
+	create(input: ScreenConfig): ScreenConfig {
+		const created = this.store.create(input);
+		this.broadcast();
+		return created;
+	}
 
-  update(id: string, input: Omit<ScreenConfig, "id">): ScreenConfig {
-    const updated = this.store.update(id, input);
-    this.broadcast();
-    return updated;
-  }
+	update(id: string, input: Omit<ScreenConfig, "id">): ScreenConfig {
+		const updated = this.store.update(id, input);
+		this.broadcast();
+		return updated;
+	}
 
-  delete(id: string): void {
-    this.store.delete(id);
-    this.broadcast();
-  }
+	delete(id: string): void {
+		this.store.delete(id);
+		this.broadcast();
+	}
 
-  reorder(ids: string[]): void {
-    this.store.reorder(ids);
-    this.broadcast();
-  }
+	reorder(ids: string[]): void {
+		this.store.reorder(ids);
+		this.broadcast();
+	}
 
-  setDefault(id: string): void {
-    this.store.setDefault(id);
-    this.broadcast();
-  }
+	setDefault(id: string): void {
+		this.store.setDefault(id);
+		this.broadcast();
+	}
 
-  replaceGenerated(screens: ScreenConfig[]): {
-    added: string[];
-    replacedCount: number;
-    skipped: string[];
-  } {
-    const result = this.store.replaceGenerated(screens);
-    this.broadcast();
-    return result;
-  }
+	replaceGenerated(screens: ScreenConfig[]): {
+		added: string[];
+		replacedCount: number;
+		skipped: string[];
+	} {
+		const result = this.store.replaceGenerated(screens);
+		this.broadcast();
+		return result;
+	}
 
-  uniquifyId(base: string): string {
-    return this.store.uniquifyId(base);
-  }
+	uniquifyId(base: string): string {
+		return this.store.uniquifyId(base);
+	}
 
-  /** Also called once at startup so `core/screens` is retained from boot. */
-  broadcast(): void {
-    const screens = this.store.list();
-    this.hub.publish("core/screens", screens);
-    void this.plugins.runActionEverywhere("entity-hints", {
-      entities: extractEntityIds(screens),
-    });
-  }
+	/** Also called once at startup so `core/screens` is retained from boot. */
+	broadcast(): void {
+		const screens = this.store.list();
+		this.hub.publish("core/screens", screens);
+		void this.plugins.runActionEverywhere("entity-hints", {
+			entities: extractEntityIds(screens),
+		});
+	}
 }

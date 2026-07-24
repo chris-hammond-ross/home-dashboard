@@ -12,71 +12,71 @@ import type { StoredTariff, TariffStore } from "./db/tariff-store.js";
  * day, not on an interval.
  */
 export class TariffService {
-  private timer: NodeJS.Timeout | null = null;
+	private timer: NodeJS.Timeout | null = null;
 
-  constructor(
-    private store: TariffStore,
-    private hub: TopicHub,
-  ) {}
+	constructor(
+		private store: TariffStore,
+		private hub: TopicHub,
+	) {}
 
-  list(): StoredTariff[] {
-    return this.store.list();
-  }
+	list(): StoredTariff[] {
+		return this.store.list();
+	}
 
-  active(): StoredTariff | null {
-    return this.store.active();
-  }
+	active(): StoredTariff | null {
+		return this.store.active();
+	}
 
-  revision(): string {
-    return this.store.revision();
-  }
+	revision(): string {
+		return this.store.revision();
+	}
 
-  create(input: Tariff, active?: boolean): StoredTariff {
-    const created = this.store.create(input, active);
-    this.broadcast();
-    return created;
-  }
+	create(input: Tariff, active?: boolean): StoredTariff {
+		const created = this.store.create(input, active);
+		this.broadcast();
+		return created;
+	}
 
-  update(id: string, input: Omit<Tariff, "id">): StoredTariff {
-    const updated = this.store.update(id, input);
-    this.broadcast();
-    return updated;
-  }
+	update(id: string, input: Omit<Tariff, "id">): StoredTariff {
+		const updated = this.store.update(id, input);
+		this.broadcast();
+		return updated;
+	}
 
-  delete(id: string): void {
-    this.store.delete(id);
-    this.broadcast();
-  }
+	delete(id: string): void {
+		this.store.delete(id);
+		this.broadcast();
+	}
 
-  setActive(id: string): void {
-    this.store.setActive(id);
-    this.broadcast();
-  }
+	setActive(id: string): void {
+		this.store.setActive(id);
+		this.broadcast();
+	}
 
-  uniquifyId(base: string): string {
-    return this.store.uniquifyId(base);
-  }
+	uniquifyId(base: string): string {
+		return this.store.uniquifyId(base);
+	}
 
-  /** Also called once at startup so `core/tariff` is retained from boot. */
-  broadcast(): void {
-    if (this.timer) {
-      clearTimeout(this.timer);
-      this.timer = null;
-    }
-    const active = this.store.active();
-    const state = tariffState(active, Date.now());
-    this.hub.publish("core/tariff", state);
+	/** Also called once at startup so `core/tariff` is retained from boot. */
+	broadcast(): void {
+		if (this.timer) {
+			clearTimeout(this.timer);
+			this.timer = null;
+		}
+		const active = this.store.active();
+		const state = tariffState(active, Date.now());
+		this.hub.publish("core/tariff", state);
 
-    if (!state.nextChangeAt) return;
-    // Land just after the boundary so the new band resolves, and never
-    // schedule a zero/negative delay (which would spin).
-    const delay = Math.max(1000, new Date(state.nextChangeAt).getTime() - Date.now() + 500);
-    this.timer = setTimeout(() => this.broadcast(), delay);
-    this.timer.unref?.();
-  }
+		if (!state.nextChangeAt) return;
+		// Land just after the boundary so the new band resolves, and never
+		// schedule a zero/negative delay (which would spin).
+		const delay = Math.max(1000, new Date(state.nextChangeAt).getTime() - Date.now() + 500);
+		this.timer = setTimeout(() => this.broadcast(), delay);
+		this.timer.unref?.();
+	}
 
-  dispose(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = null;
-  }
+	dispose(): void {
+		if (this.timer) clearTimeout(this.timer);
+		this.timer = null;
+	}
 }

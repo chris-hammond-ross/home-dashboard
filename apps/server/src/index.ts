@@ -24,75 +24,76 @@ const VERSION = "0.0.1";
 const log = makeLogger("server");
 
 async function main(): Promise<void> {
-  const configPath = findConfigPath();
-  const config = loadConfig(configPath);
-  log.info(`config loaded from ${configPath}`);
+	const configPath = findConfigPath();
+	const config = loadConfig(configPath);
+	log.info(`config loaded from ${configPath}`);
 
-  const dbPath = resolveDbPath(configPath, config.storage.path);
-  const db = openDatabase(dbPath);
-  log.info(`database at ${dbPath}`);
-  const store = new ScreenStore(db);
-  const imported = store.importFromConfig(config.screens);
-  if (imported >= 0) log.info(`first boot: imported ${imported} screen(s) from YAML`);
+	const dbPath = resolveDbPath(configPath, config.storage.path);
+	const db = openDatabase(dbPath);
+	log.info(`database at ${dbPath}`);
+	const store = new ScreenStore(db);
+	const imported = store.importFromConfig(config.screens);
+	if (imported >= 0) log.info(`first boot: imported ${imported} screen(s) from YAML`);
 
-  const hub = new TopicHub();
-  const pluginHost = new PluginHost(hub, makeLogger);
-  await pluginHost.start(config.integrations);
-  log.info(`integrations up: ${config.integrations.filter((i) => i.enabled).length}`);
+	const hub = new TopicHub();
+	const pluginHost = new PluginHost(hub, makeLogger);
+	await pluginHost.start(config.integrations);
+	log.info(`integrations up: ${config.integrations.filter((i) => i.enabled).length}`);
 
-  // After plugin start so entity-hints handlers exist; retains core/screens from boot.
-  const screens = new ScreenService(store, hub, pluginHost);
-  screens.broadcast();
+	// After plugin start so entity-hints handlers exist; retains core/screens from boot.
+	const screens = new ScreenService(store, hub, pluginHost);
+	screens.broadcast();
 
-  const tariffs = new TariffService(new TariffStore(db), hub);
-  tariffs.broadcast(); // retains core/tariff from boot, and arms the band timer
-  const aer = new AerClient(makeLogger("aer"));
-  const energy = new EnergyService(pluginHost, tariffs);
+	const tariffs = new TariffService(new TariffStore(db), hub);
+	tariffs.broadcast(); // retains core/tariff from boot, and arms the band timer
+	const aer = new AerClient(makeLogger("aer"));
+	const energy = new EnergyService(pluginHost, tariffs);
 
-  const app = Fastify({ logger: false });
-  await app.register(websocket);
+	const app = Fastify({ logger: false });
+	await app.register(websocket);
 
-  app.get("/api/health", () => ({
-    ok: true,
-    version: VERSION,
-    uptimeSec: Math.round(process.uptime()),
-  }));
-  registerScreenRoutes(app, screens, config.ambient);
-  registerTariffRoutes(app, tariffs, aer);
-  registerEnergyRoutes(app, energy);
+	app.get("/api/health", () => ({
+		ok: true,
+		version: VERSION,
+		uptimeSec: Math.round(process.uptime()),
+	}));
+	registerScreenRoutes(app, screens, config.ambient);
+	registerTariffRoutes(app, tariffs, aer);
+	registerEnergyRoutes(app, energy);
 
-  registerWs(app, hub, pluginHost, VERSION);
+	registerWs(app, hub, pluginHost, VERSION);
 
-  // In production the built frontend is served from here (dev uses Vite + proxy).
-  const staticDir =
-    process.env.STATIC_DIR ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
-  if (existsSync(staticDir)) {
-    await app.register(fastifyStatic, { root: staticDir });
-    app.setNotFoundHandler((req, reply) => {
-      if (req.raw.url?.startsWith("/api") || req.raw.url?.startsWith("/ws")) {
-        return reply.code(404).send({ error: "not found" });
-      }
-      return reply.sendFile("index.html"); // SPA fallback
-    });
-    log.info(`serving frontend from ${staticDir}`);
-  }
+	// In production the built frontend is served from here (dev uses Vite + proxy).
+	const staticDir =
+		process.env.STATIC_DIR ??
+		resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
+	if (existsSync(staticDir)) {
+		await app.register(fastifyStatic, { root: staticDir });
+		app.setNotFoundHandler((req, reply) => {
+			if (req.raw.url?.startsWith("/api") || req.raw.url?.startsWith("/ws")) {
+				return reply.code(404).send({ error: "not found" });
+			}
+			return reply.sendFile("index.html"); // SPA fallback
+		});
+		log.info(`serving frontend from ${staticDir}`);
+	}
 
-  await app.listen({ host: config.server.host, port: config.server.port });
-  log.info(`listening on http://${config.server.host}:${config.server.port}`);
+	await app.listen({ host: config.server.host, port: config.server.port });
+	log.info(`listening on http://${config.server.host}:${config.server.port}`);
 
-  const shutdown = async (): Promise<void> => {
-    log.info("shutting down");
-    tariffs.dispose();
-    await pluginHost.dispose();
-    await app.close();
-    db.close();
-    process.exit(0);
-  };
-  process.on("SIGINT", () => void shutdown());
-  process.on("SIGTERM", () => void shutdown());
+	const shutdown = async (): Promise<void> => {
+		log.info("shutting down");
+		tariffs.dispose();
+		await pluginHost.dispose();
+		await app.close();
+		db.close();
+		process.exit(0);
+	};
+	process.on("SIGINT", () => void shutdown());
+	process.on("SIGTERM", () => void shutdown());
 }
 
 main().catch((err: unknown) => {
-  console.error(err);
-  process.exit(1);
+	console.error(err);
+	process.exit(1);
 });

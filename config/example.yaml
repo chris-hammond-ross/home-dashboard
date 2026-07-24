@@ -3,162 +3,162 @@
 # Out of the box this runs entirely on the demo integration (fake data).
 
 server:
-  host: 0.0.0.0
-  port: 8090
+    host: 0.0.0.0
+    port: 8090
 
 # storage:
 #   path: ../data/dashboard.db # SQLite file; relative to this config file
 
 ambient:
-  idleSeconds: 120 # dashboard → ambient screen after this much inactivity
-  resumeWindowMinutes: 60 # on wake, restore the last view if touched within this window
-  weatherTopic: demo/weather
-  calendarTopic: demo/calendar
+    idleSeconds: 120 # dashboard → ambient screen after this much inactivity
+    resumeWindowMinutes: 60 # on wake, restore the last view if touched within this window
+    weatherTopic: demo/weather
+    calendarTopic: demo/calendar
 
 integrations:
-  - id: demo
-    kind: demo
-    # config: { tickMs: 2000 }
+    - id: demo
+      kind: demo
+      # config: { tickMs: 2000 }
 
-  # Real weather — live conditions + 7-day forecast from Open-Meteo (no API key).
-  # Auto-locates by this machine's public IP; publishes to weather/weather.
-  # Point the weather widget's `topic` at weather/weather to use it.
-  # - id: weather
-  #   kind: weather
-  #   config:
-  #     # Location precedence: lat+lon → location name → auto (IP). Pick one:
-  #     # latitude: -34.93
-  #     # longitude: 138.60
-  #     # location: Adelaide          # geocoded via Open-Meteo
-  #     temperatureUnit: celsius      # celsius | fahrenheit
-  #     windSpeedUnit: kmh            # kmh | mph | ms | kn
-  #     refreshMinutes: 15
+    # Real weather — live conditions + 7-day forecast from Open-Meteo (no API key).
+    # Auto-locates by this machine's public IP; publishes to weather/weather.
+    # Point the weather widget's `topic` at weather/weather to use it.
+    # - id: weather
+    #   kind: weather
+    #   config:
+    #     # Location precedence: lat+lon → location name → auto (IP). Pick one:
+    #     # latitude: -34.93
+    #     # longitude: 138.60
+    #     # location: Adelaide          # geocoded via Open-Meteo
+    #     temperatureUnit: celsius      # celsius | fahrenheit
+    #     windSpeedUnit: kmh            # kmh | mph | ms | kn
+    #     refreshMinutes: 15
 
-  # Real Home Assistant — full walkthrough in docs/home-assistant.md
-  # - id: ha
-  #   kind: home-assistant
-  #   config:
-  #     url: http://homeassistant.local:8123 # the default; use the IP in Docker
-  #     token: ${HA_TOKEN} # put HA_TOKEN=... in .env (repo root, gitignored)
-  #     entities: # omit to publish ALL entities
-  #       - light.study_lamp
+    # Real Home Assistant — full walkthrough in docs/home-assistant.md
+    # - id: ha
+    #   kind: home-assistant
+    #   config:
+    #     url: http://homeassistant.local:8123 # the default; use the IP in Docker
+    #     token: ${HA_TOKEN} # put HA_TOKEN=... in .env (repo root, gitignored)
+    #     entities: # omit to publish ALL entities
+    #       - light.study_lamp
 
 # Screens here are a FIRST-BOOT SEED: imported into the SQLite database
 # (storage.path above) the first time the server starts with an empty DB.
 # After that this section is ignored — edit screens at #/settings in the
 # browser instead. Delete the DB file to re-seed from here.
 screens:
-  - id: home
-    name: Home
-    default: true
-    columns: 4
-    widgets:
-      - type: clock
-        cols: 2
-      # Weather with a 7-day forecast. Ships three looks — pick one with `variant`
-      # (default nocturne): nocturne (glass/aurora) · ember (warm serif) ·
-      # meridian (mono instrument panel). Reads demo/weather until you add the
-      # weather integration above, then set topic: weather/weather.
-      - type: weather
-        cols: 2
-        rows: 3
-        variant: nocturne
-        # props:
-        #   topic: weather/weather
-      - type: energy
-        cols: 2
-        rows: 2
-        title: Energy
-      - type: calendar
-        cols: 2
-        rows: 2
-        title: Up next
-      - type: now-playing
-        cols: 2
-        title: Now playing
-      # A single light switch (needs the ha integration above). The UI matches
-      # the entity's capabilities: plain on/off → tap tile, dimmable → vertical
-      # drag-to-dim pill (rows: 2 recommended), colour → pill + colour wheel.
-      # Works for ANY toggleable entity — point it at a switch.* outlet that
-      # feeds a lamp and it gets the simple switch UI automatically.
-      # - type: light
-      #   title: Study
-      #   cols: 1
-      #   rows: 2
-      #   props:
-      #     entity: light.study_lamp
-      #     # label: Study lamp   # override the HA friendly name
-      #     # icon: lamp          # bulb | lamp | lamp-floor | bed | plug
-      #     # variant: dimmer     # force switch | dimmer | colour (default: auto)
-      # A generic two-way toggle for anything else (fans, input_booleans, …):
-      # - type: entity-toggle
-      #   title: Study
-      #   cols: 2
-      #   props:
-      #     entity: fan.study_ceiling
-      # A group of lights — master power/brightness, expandable per-light tiles.
-      # Members can mix domains (light.*, adopted switch.* outlets); the master
-      # brightness bar only applies to the dimmable ones:
-      # - type: light-group
-      #   title: Lights
-      #   cols: 2
-      #   rows: 2
-      #   props:
-      #     entities:
-      #       - light.study_lamp
-      #       - light.kitchen_bench
-      #       - switch.lamp_outlet
-      # Live power flow between grid, solar, battery and home (needs the ha
-      # integration). Ships two looks — pick one with `variant` (default node-map):
-      #   variant: node-map    # circular nodes with flowing particles
-      #   variant: switchboard # source cards feeding a switchboard bus
-      # Only the sensors you set are shown, so a grid-only home just needs
-      # gridEntity. Grid/battery power may be a single SIGNED sensor (grid: +import
-      # / -export; battery: +charge / -discharge) OR separate directional sensors.
-      # - type: home-power-flow
-      #   title: Power
-      #   cols: 3
-      #   rows: 2
-      #   variant: node-map
-      #   props:
-      #     solarEntity: sensor.solar_power
-      #     gridEntity: sensor.grid_power          # signed; or use the two below
-      #     # gridImportEntity: sensor.grid_import_power
-      #     # gridExportEntity: sensor.grid_export_power
-      #     batteryEntity: sensor.battery_power     # signed; or use the two below
-      #     # batteryChargeEntity: sensor.battery_charge_power
-      #     # batteryDischargeEntity: sensor.battery_discharge_power
-      #     batterySocEntity: sensor.battery_soc
-      #     # homeEntity: sensor.home_load          # optional; else computed
-      # Climate control for a thermostat / AC head unit (needs the ha
-      # integration). Temperature, HVAC mode and fan speed are all driven by the
-      # entity's own capabilities. Ships three looks — pick one with `variant`
-      # (default radial): radial (drag dial) · studio (channel-strip) · bento
-      # (tile grid). Add `zoneEntities` for ducted-zone dampers (AirTouch /
-      # Advantage Air) — cover.* zones expose damper position %, fan.* expose
-      # speed %, climate.* zones toggle on/off. Recommended span cols 2, rows 4.
-      # Runs on the demo integration too — set props.integration: demo and point
-      # entity at climate.living_room (zones cover.living_zone / cover.bedroom_zone).
-      # - type: climate-control
-      #   title: Living Room
-      #   cols: 2
-      #   rows: 4
-      #   variant: radial
-      #   props:
-      #     entity: climate.living_room
-      #     # label: Living Room AC   # override the HA friendly name
-      #     # zoneEntities:
-      #     #   - cover.living_zone
-      #     #   - cover.bedroom_zone
+    - id: home
+      name: Home
+      default: true
+      columns: 4
+      widgets:
+          - type: clock
+            cols: 2
+          # Weather with a 7-day forecast. Ships three looks — pick one with `variant`
+          # (default nocturne): nocturne (glass/aurora) · ember (warm serif) ·
+          # meridian (mono instrument panel). Reads demo/weather until you add the
+          # weather integration above, then set topic: weather/weather.
+          - type: weather
+            cols: 2
+            rows: 3
+            variant: nocturne
+            # props:
+            #   topic: weather/weather
+          - type: energy
+            cols: 2
+            rows: 2
+            title: Energy
+          - type: calendar
+            cols: 2
+            rows: 2
+            title: Up next
+          - type: now-playing
+            cols: 2
+            title: Now playing
+          # A single light switch (needs the ha integration above). The UI matches
+          # the entity's capabilities: plain on/off → tap tile, dimmable → vertical
+          # drag-to-dim pill (rows: 2 recommended), colour → pill + colour wheel.
+          # Works for ANY toggleable entity — point it at a switch.* outlet that
+          # feeds a lamp and it gets the simple switch UI automatically.
+          # - type: light
+          #   title: Study
+          #   cols: 1
+          #   rows: 2
+          #   props:
+          #     entity: light.study_lamp
+          #     # label: Study lamp   # override the HA friendly name
+          #     # icon: lamp          # bulb | lamp | lamp-floor | bed | plug
+          #     # variant: dimmer     # force switch | dimmer | colour (default: auto)
+          # A generic two-way toggle for anything else (fans, input_booleans, …):
+          # - type: entity-toggle
+          #   title: Study
+          #   cols: 2
+          #   props:
+          #     entity: fan.study_ceiling
+          # A group of lights — master power/brightness, expandable per-light tiles.
+          # Members can mix domains (light.*, adopted switch.* outlets); the master
+          # brightness bar only applies to the dimmable ones:
+          # - type: light-group
+          #   title: Lights
+          #   cols: 2
+          #   rows: 2
+          #   props:
+          #     entities:
+          #       - light.study_lamp
+          #       - light.kitchen_bench
+          #       - switch.lamp_outlet
+          # Live power flow between grid, solar, battery and home (needs the ha
+          # integration). Ships two looks — pick one with `variant` (default node-map):
+          #   variant: node-map    # circular nodes with flowing particles
+          #   variant: switchboard # source cards feeding a switchboard bus
+          # Only the sensors you set are shown, so a grid-only home just needs
+          # gridEntity. Grid/battery power may be a single SIGNED sensor (grid: +import
+          # / -export; battery: +charge / -discharge) OR separate directional sensors.
+          # - type: home-power-flow
+          #   title: Power
+          #   cols: 3
+          #   rows: 2
+          #   variant: node-map
+          #   props:
+          #     solarEntity: sensor.solar_power
+          #     gridEntity: sensor.grid_power          # signed; or use the two below
+          #     # gridImportEntity: sensor.grid_import_power
+          #     # gridExportEntity: sensor.grid_export_power
+          #     batteryEntity: sensor.battery_power     # signed; or use the two below
+          #     # batteryChargeEntity: sensor.battery_charge_power
+          #     # batteryDischargeEntity: sensor.battery_discharge_power
+          #     batterySocEntity: sensor.battery_soc
+          #     # homeEntity: sensor.home_load          # optional; else computed
+          # Climate control for a thermostat / AC head unit (needs the ha
+          # integration). Temperature, HVAC mode and fan speed are all driven by the
+          # entity's own capabilities. Ships three looks — pick one with `variant`
+          # (default radial): radial (drag dial) · studio (channel-strip) · bento
+          # (tile grid). Add `zoneEntities` for ducted-zone dampers (AirTouch /
+          # Advantage Air) — cover.* zones expose damper position %, fan.* expose
+          # speed %, climate.* zones toggle on/off. Recommended span cols 2, rows 4.
+          # Runs on the demo integration too — set props.integration: demo and point
+          # entity at climate.living_room (zones cover.living_zone / cover.bedroom_zone).
+          # - type: climate-control
+          #   title: Living Room
+          #   cols: 2
+          #   rows: 4
+          #   variant: radial
+          #   props:
+          #     entity: climate.living_room
+          #     # label: Living Room AC   # override the HA friendly name
+          #     # zoneEntities:
+          #     #   - cover.living_zone
+          #     #   - cover.bedroom_zone
 
-  - id: media
-    name: Media
-    columns: 4
-    widgets:
-      - type: now-playing
-        cols: 4
-        title: Now playing
-      - type: calendar
-        cols: 4
-        rows: 2
-        title: Coming up
+    - id: media
+      name: Media
+      columns: 4
+      widgets:
+          - type: now-playing
+            cols: 4
+            title: Now playing
+          - type: calendar
+            cols: 4
+            rows: 2
+            title: Coming up

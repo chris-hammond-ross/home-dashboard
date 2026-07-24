@@ -10,23 +10,23 @@ import { Stack, Text } from "@mantine/core";
  * same wherever it appears.
  */
 export function StatTile({ label, value, sub }: { label: string; value: string; sub?: ReactNode }) {
-  return (
-    <Stack gap={2}>
-      <Text size="xs" tt="uppercase" fw={600} lts="0.08em" c="var(--text-muted)">
-        {label}
-      </Text>
-      <Text fz={28} fw={600} lh={1.15} c="var(--text-primary)">
-        {value}
-      </Text>
-      {sub}
-    </Stack>
-  );
+	return (
+		<Stack gap={2}>
+			<Text size="xs" tt="uppercase" fw={600} lts="0.08em" c="var(--text-muted)">
+				{label}
+			</Text>
+			<Text fz={28} fw={600} lh={1.15} c="var(--text-primary)">
+				{value}
+			</Text>
+			{sub}
+		</Stack>
+	);
 }
 
 export function SubLine({ color, children }: { color?: string; children: ReactNode }) {
-  return (
-    <Text size="sm" c={color ?? "var(--text-secondary)"}>
-      {children}
-    </Text>
-  );
+	return (
+		<Text size="sm" c={color ?? "var(--text-secondary)"}>
+			{children}
+		</Text>
+	);
 }

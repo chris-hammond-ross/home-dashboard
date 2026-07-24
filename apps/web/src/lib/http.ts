@@ -5,19 +5,19 @@
  * text so callers can show it verbatim.
  */
 export async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: init?.body ? { "content-type": "application/json" } : undefined,
-  });
-  if (!res.ok) {
-    let message = `HTTP ${res.status}`;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body.error) message = body.error;
-    } catch {
-      /* non-JSON error body */
-    }
-    throw new Error(message);
-  }
-  return (await res.json()) as T;
+	const res = await fetch(url, {
+		...init,
+		headers: init?.body ? { "content-type": "application/json" } : undefined,
+	});
+	if (!res.ok) {
+		let message = `HTTP ${res.status}`;
+		try {
+			const body = (await res.json()) as { error?: string };
+			if (body.error) message = body.error;
+		} catch {
+			/* non-JSON error body */
+		}
+		throw new Error(message);
+	}
+	return (await res.json()) as T;
 }

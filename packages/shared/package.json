@@ -1,22 +1,22 @@
 {
-  "name": "@home-dashboard/shared",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "description": "Shared types: WebSocket protocol, integration plugin SDK, config schemas.",
-  "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
-    }
-  },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "zod": "^4.0.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.6.0"
-  }
+	"name": "@home-dashboard/shared",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"description": "Shared types: WebSocket protocol, integration plugin SDK, config schemas.",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"zod": "^4.0.0"
+	},
+	"devDependencies": {
+		"typescript": "^5.6.0"
+	}
 }

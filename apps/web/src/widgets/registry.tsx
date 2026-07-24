@@ -18,15 +18,15 @@ import { StudioVariant } from "./climate/StudioVariant.js";
 import { BentoVariant } from "./climate/BentoVariant.js";
 
 export interface WidgetRenderProps {
-  config: WidgetConfig;
+	config: WidgetConfig;
 }
 
 type WidgetComponent = (props: WidgetRenderProps) => ReactNode;
 
 /** A widget type that ships more than one interchangeable visual variant. */
 interface VariantEntry {
-  variants: Record<string, WidgetComponent>;
-  defaultVariant: string;
+	variants: Record<string, WidgetComponent>;
+	defaultVariant: string;
 }
 
 type RegistryEntry = WidgetComponent | VariantEntry;
@@ -38,58 +38,58 @@ type RegistryEntry = WidgetComponent | VariantEntry;
  * just another key in its `variants` map plus a `meta.ts` entry.
  */
 const registry: Record<string, RegistryEntry> = {
-  clock: ClockWidget,
-  weather: {
-    defaultVariant: "nocturne",
-    variants: { ember: EmberVariant, meridian: MeridianVariant, nocturne: NocturneVariant },
-  },
-  energy: EnergyWidget,
-  light: LightWidget,
-  "light-group": LightGroupWidget,
-  calendar: CalendarWidget,
-  "now-playing": NowPlayingWidget,
-  "entity-toggle": EntityToggleWidget,
-  "home-power-flow": {
-    defaultVariant: "node-map",
-    variants: { "node-map": NodeMapVariant, switchboard: SwitchboardVariant },
-  },
-  "climate-control": {
-    defaultVariant: "radial",
-    variants: { radial: RadialVariant, studio: StudioVariant, bento: BentoVariant },
-  },
+	clock: ClockWidget,
+	weather: {
+		defaultVariant: "nocturne",
+		variants: { ember: EmberVariant, meridian: MeridianVariant, nocturne: NocturneVariant },
+	},
+	energy: EnergyWidget,
+	light: LightWidget,
+	"light-group": LightGroupWidget,
+	calendar: CalendarWidget,
+	"now-playing": NowPlayingWidget,
+	"entity-toggle": EntityToggleWidget,
+	"home-power-flow": {
+		defaultVariant: "node-map",
+		variants: { "node-map": NodeMapVariant, switchboard: SwitchboardVariant },
+	},
+	"climate-control": {
+		defaultVariant: "radial",
+		variants: { radial: RadialVariant, studio: StudioVariant, bento: BentoVariant },
+	},
 };
 
 /** Resolve the component for a config, honoring its chosen (or default) variant. */
 function resolve(entry: RegistryEntry | undefined, variant: string | undefined) {
-  if (!entry) return undefined;
-  if (typeof entry === "function") return entry;
-  return entry.variants[variant ?? entry.defaultVariant] ?? entry.variants[entry.defaultVariant];
+	if (!entry) return undefined;
+	if (typeof entry === "function") return entry;
+	return entry.variants[variant ?? entry.defaultVariant] ?? entry.variants[entry.defaultVariant];
 }
 
 /** Shared card chrome: fills its grid cell, optional mini-label title. */
 export function WidgetCard({ title, children }: { title?: string; children: ReactNode }) {
-  return (
-    <Card h="100%" style={{ overflow: "hidden", border: "none" }}>
-      <Stack gap="xs" h="100%">
-        {title ? (
-          <Text size="xs" tt="uppercase" fw={600} lts="0.08em" c="var(--text-muted)">
-            {title}
-          </Text>
-        ) : null}
-        {children}
-      </Stack>
-    </Card>
-  );
+	return (
+		<Card h="100%" style={{ overflow: "hidden", border: "none" }}>
+			<Stack gap="xs" h="100%">
+				{title ? (
+					<Text size="xs" tt="uppercase" fw={600} lts="0.08em" c="var(--text-muted)">
+						{title}
+					</Text>
+				) : null}
+				{children}
+			</Stack>
+		</Card>
+	);
 }
 
 export function WidgetRenderer({ config }: WidgetRenderProps) {
-  const Component = resolve(registry[config.type], config.variant);
-  if (!Component) {
-    return (
-      <WidgetCard title={config.title ?? config.type}>
-        <Text c="var(--text-muted)">Unknown widget type “{config.type}”</Text>
-      </WidgetCard>
-    );
-  }
-  return <Component config={config} />;
+	const Component = resolve(registry[config.type], config.variant);
+	if (!Component) {
+		return (
+			<WidgetCard title={config.title ?? config.type}>
+				<Text c="var(--text-muted)">Unknown widget type “{config.type}”</Text>
+			</WidgetCard>
+		);
+	}
+	return <Component config={config} />;
 }
